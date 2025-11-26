@@ -76,6 +76,8 @@ from .policy_robot_bridge import (
 )
 from .rename_processor import RenameObservationsProcessorStep
 from .tokenizer_processor import TokenizerProcessorStep
+from .quaternion_observations_processor import RotTransProcessorStep
+from .phase_processor import PhaseProcessorStep
 
 __all__ = [
     "ActionProcessorStep",
@@ -130,4 +132,6 @@ __all__ = [
     "TruncatedProcessorStep",
     "UnnormalizerProcessorStep",
     "VanillaObservationProcessorStep",
+    "RotTransProcessorStep",
+    "PhaseProcessorStep",
 ]
