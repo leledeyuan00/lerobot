@@ -474,6 +474,8 @@ class FACT(nn.Module):
                 vae_encoder_input = [cls_embed, robot_state_embed, robot_wrench_embed, phase_embed, action_embed]  # (B, S+4, D)
             elif self.config.robot_state_feature and self.config.wrench_dim is not None:
                 vae_encoder_input = [cls_embed, robot_state_embed, robot_wrench_embed, action_embed]  # (B, S+3, D)
+            elif self.config.robot_state_feature and self.config.phase_num is not None:
+                vae_encoder_input = [cls_embed, robot_state_embed, phase_embed, action_embed]  # (B, S+3, D)
             elif self.config.robot_state_feature:
                 vae_encoder_input = [cls_embed, robot_state_embed, action_embed] # (B, S+2, D)
             else:
