@@ -377,17 +377,17 @@ class FACT(nn.Module):
                 backbone_model.fc.in_features, config.dim_model, kernel_size=1
             )
         # Transformer encoder positional embeddings.
-        n_1d_tokens = 1  # for the latent
+        self.n_1d_tokens = 1  # for the latent
         if self.config.robot_state_feature:
-            n_1d_tokens += 1
+            self.n_1d_tokens += 1
         if self.config.env_state_feature:
-            n_1d_tokens += 1
+            self.n_1d_tokens += 1
         if self.config.wrench_dim is not None:
-            n_1d_tokens += 1 # modified to account for wrench input
+            self.n_1d_tokens += 1 # modified to account for wrench input
         if self.config.phase_num is not None:
-            n_1d_tokens += 1 # modified to account for phase input
+            self.n_1d_tokens += 1 # modified to account for phase input
         
-        self.encoder_1d_feature_pos_embed = nn.Embedding(n_1d_tokens, config.dim_model)
+        self.encoder_1d_feature_pos_embed = nn.Embedding(self.n_1d_tokens, config.dim_model)
         if self.config.image_features:
             self.encoder_cam_feat_pos_embed = FACTSinusoidalPositionEmbedding2d(config.dim_model // 2)
 
@@ -441,8 +441,9 @@ class FACT(nn.Module):
 
         batch_position = batch[OBS_STATE][:, position_indices]  # (B, 6)
         batch_wrench = batch[OBS_STATE][:, wrench_indices]  # (B, 12)
-        batch_phase = batch["phase"]  # (B, 1)
-        batch_phase = batch_phase.flatten().long()
+        if self.config.phase_num is not None:
+            batch_phase = batch["phase"]  # (B, 1)
+            batch_phase = batch_phase.flatten().long()
         batch_rot_state = batch["observation_rotation"] # (B, 12)
 
         batch_pose = torch.cat([batch_position, batch_rot_state], dim=-1)  # (B, 18)
@@ -471,6 +472,8 @@ class FACT(nn.Module):
 
             if self.config.robot_state_feature and self.config.wrench_dim is not None and self.config.phase_num is not None:
                 vae_encoder_input = [cls_embed, robot_state_embed, robot_wrench_embed, phase_embed, action_embed]  # (B, S+4, D)
+            elif self.config.robot_state_feature and self.config.wrench_dim is not None:
+                vae_encoder_input = [cls_embed, robot_state_embed, robot_wrench_embed, action_embed]  # (B, S+3, D)
             elif self.config.robot_state_feature:
                 vae_encoder_input = [cls_embed, robot_state_embed, action_embed] # (B, S+2, D)
             else:
@@ -485,7 +488,7 @@ class FACT(nn.Module):
             # sequence depending whether we use the input states or not (cls and robot state)
             # False means not a padding token.
             cls_joint_is_pad = torch.full(
-                (batch_size, 4 if self.config.robot_state_feature else 1),
+                (batch_size, self.n_1d_tokens),
                 False,
                 device=batch[OBS_STATE].device,
             )
