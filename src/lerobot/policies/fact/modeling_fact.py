@@ -614,13 +614,17 @@ class ACTEncoderLayer(nn.Module):
         self.activation = get_activation_fn(config.feedforward_activation)
         self.pre_norm = config.pre_norm
 
+        if not self.training:
+            self.last_attention_weights = None
+
     def forward(self, x, pos_embed: Tensor | None = None, key_padding_mask: Tensor | None = None) -> Tensor:
         skip = x
         if self.pre_norm:
             x = self.norm1(x)
         q = k = x if pos_embed is None else x + pos_embed
-        x = self.self_attn(q, k, value=x, key_padding_mask=key_padding_mask)
-        x = x[0]  # note: [0] to select just the output, not the attention weights
+        x, weights = self.self_attn(q, k, value=x, key_padding_mask=key_padding_mask)
+        if not self.training:
+            self.last_attention_weights = weights.detach().cpu()
         x = skip + self.dropout1(x)
         if self.pre_norm:
             skip = x
