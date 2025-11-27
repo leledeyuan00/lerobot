@@ -62,8 +62,10 @@ class RotTransProcessorStep(ProcessorStep):
         new_transition = transition.copy()
         obs = new_transition[TransitionKey.OBSERVATION]
         state = obs[OBS_STATE]
-        left_quat = state[..., 3:7]
-        right_quat = state[..., 16:20]
+        left_quat = state[..., 3:7] # xyzw
+        left_quat = torch.cat([left_quat[..., 1:4], left_quat[..., 0:1]], dim=-1)  # to wxyz
+        right_quat = state[..., 16:20] # xyzw
+        right_quat = torch.cat([right_quat[..., 1:4], right_quat[..., 0:1]], dim=-1)  # to wxyz
 
         left_rot_6d = matrix_to_rotation_6d(quaternion_to_matrix(left_quat))
         right_rot_6d = matrix_to_rotation_6d(quaternion_to_matrix(right_quat))
