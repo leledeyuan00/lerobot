@@ -72,12 +72,13 @@ class RotTransProcessorStep(ProcessorStep):
         obs["observation_rotation"] = torch.cat([left_rot_6d, right_rot_6d], dim=-1)
 
         action = new_transition[TransitionKey.ACTION]
-
-        left_quat_action = action[..., 3:7]
-        right_quat_action = action[..., 11:15]
-        left_rot_6d_action = matrix_to_rotation_6d(quaternion_to_matrix(left_quat_action))
-        right_rot_6d_action = matrix_to_rotation_6d(quaternion_to_matrix(right_quat_action))
-        obs["action_rotation"] = torch.cat([left_rot_6d_action, right_rot_6d_action], dim=-1)
+        if action is not None:
+            left_quat_action = action[..., 3:7]
+            right_quat_action = action[..., 11:15]
+            left_rot_6d_action = matrix_to_rotation_6d(quaternion_to_matrix(left_quat_action))
+            right_rot_6d_action = matrix_to_rotation_6d(quaternion_to_matrix(right_quat_action))
+            obs["action_rotation"] = torch.cat([left_rot_6d_action, right_rot_6d_action], dim=-1)
+            
         new_transition[TransitionKey.OBSERVATION] = obs
         # keep the original state and action
         # new_transition[OBS_STATE] = state
