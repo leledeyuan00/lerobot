@@ -1,37 +1,37 @@
-from lerobot.envs.utils import preprocess_observation
-from lerobot.datasets.lerobot_dataset import LeRobotDataset
-from lerobot.utils.robot_utils import busy_wait
+# from lerobot.envs.utils import preprocess_observation
+# from lerobot.datasets.lerobot_dataset import LeRobotDataset
+# from lerobot.utils.robot_utils import busy_wait
 
-from subset_dataset import SubsetStateActionDataset
+# from subset_dataset import SubsetStateActionDataset
 
-STATE_KEEP_NAMES = [
-    "ee_x_l", "ee_y_l", "ee_z_l",
-    "ee_qx_l", "ee_qy_l", "ee_qz_l", "ee_qw_l",
-    "ee_x_r", "ee_y_r", "ee_z_r",
-    "ee_qx_r", "ee_qy_r", "ee_qz_r", "ee_qw_r",
-]
+# STATE_KEEP_NAMES = [
+#     "ee_x_l", "ee_y_l", "ee_z_l",
+#     "ee_qx_l", "ee_qy_l", "ee_qz_l", "ee_qw_l",
+#     "ee_x_r", "ee_y_r", "ee_z_r",
+#     "ee_qx_r", "ee_qy_r", "ee_qz_r", "ee_qw_r",
+# ]
 
-ACTION_KEEP_NAMES = [
-    "ee_x_l", "ee_y_l", "ee_z_l",
-    "ee_qx_l", "ee_qy_l", "ee_qz_l", "ee_qw_l",
-    "gripper_l",
-    "ee_x_r", "ee_y_r", "ee_z_r",
-    "ee_qx_r", "ee_qy_r", "ee_qz_r", "ee_qw_r",
-    "gripper_r",
-]
-# Load the dataset
-repo_id = "leledeyuan/hanging-tshirt"
-dataset = LeRobotDataset(
-    repo_id = repo_id,
-)
+# ACTION_KEEP_NAMES = [
+#     "ee_x_l", "ee_y_l", "ee_z_l",
+#     "ee_qx_l", "ee_qy_l", "ee_qz_l", "ee_qw_l",
+#     "gripper_l",
+#     "ee_x_r", "ee_y_r", "ee_z_r",
+#     "ee_qx_r", "ee_qy_r", "ee_qz_r", "ee_qw_r",
+#     "gripper_r",
+# ]
+# # Load the dataset
+# repo_id = "leledeyuan/hanging-tshirt"
+# dataset = LeRobotDataset(
+#     repo_id = repo_id,
+# )
 
-dataset = SubsetStateActionDataset(dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
+# dataset = SubsetStateActionDataset(dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
 
-first_data = dataset[0]
-print("meta action shape:", dataset.meta.features["action"]["shape"])
-print("meta state  shape:", dataset.meta.features["observation.state"]["shape"])
-if "observation.state" in first_data:
-    print("first data observation.state shape:", first_data["observation.state"].shape)
+# first_data = dataset[0]
+# print("meta action shape:", dataset.meta.features["action"]["shape"])
+# print("meta state  shape:", dataset.meta.features["observation.state"]["shape"])
+# if "observation.state" in first_data:
+#     print("first data observation.state shape:", first_data["observation.state"].shape)
 
 # metadata = dataset.meta
 # print("fetures:", metadata.features["observation.state"].items())
@@ -44,3 +44,24 @@ if "observation.state" in first_data:
 
 # # print the count items
 # print("count items:", stats["observation.state"]["count"])
+
+from tqdm import tqdm
+from lerobot.datasets.lerobot_dataset import LeRobotDataset
+
+
+dataset = LeRobotDataset(repo_id="leledeyuan/mixed-tshirt")
+i = 85329
+
+# for i in tqdm(range(len(dataset))):
+#     try:
+#         sample = dataset[i]
+#     except Exception as e:
+#         print("❌ bad sample index:", i)
+#         print("error:", e)
+#         break
+
+s = dataset[i]
+print("episode_index:", int(s["episode_index"]))
+print("frame_index:", int(s["frame_index"]))
+print("timestamp:", float(s["timestamp"]))
+print("task:", s.get("task", None))
