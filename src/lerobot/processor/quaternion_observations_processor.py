@@ -74,7 +74,10 @@ class RotTransProcessorStep(ProcessorStep):
         action = new_transition[TransitionKey.ACTION]
         if action is not None:
             left_quat_action = action[..., 3:7]
+            left_quat_action = torch.cat([left_quat_action[..., 1:4], left_quat_action[..., 0:1]], dim=-1)  # to wxyz
             right_quat_action = action[..., 11:15]
+            right_quat_action = torch.cat([right_quat_action[..., 1:4], right_quat_action[..., 0:1]], dim=-1)  # to wxyz
+            
             left_rot_6d_action = matrix_to_rotation_6d(quaternion_to_matrix(left_quat_action))
             right_rot_6d_action = matrix_to_rotation_6d(quaternion_to_matrix(right_quat_action))
             obs["action_rotation"] = torch.cat([left_rot_6d_action, right_rot_6d_action], dim=-1)
