@@ -52,6 +52,8 @@ from lerobot.utils.utils import (
 )
 
 from subset_dataset import SubsetStateActionDataset
+from phase_shift_dataset import PhaseShiftedDataset, MultiTaskDataset
+from copy import deepcopy
 
 STATE_KEEP_NAMES = [
     "ee_x_l", "ee_y_l", "ee_z_l",
@@ -223,6 +225,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
 
     if is_main_process:
         logging.info("Creating policy")
+    # cfg.policy.pretrained_path = "/home/dayuan/nas/models/fact_mixed_pwms_50chunk_2dec/checkpoints/300000/pretrained_model"
     policy = make_policy(
         cfg=cfg.policy,
         ds_meta=dataset.meta,
@@ -271,12 +274,37 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     optimizer, lr_scheduler = make_optimizer_and_scheduler(cfg, policy)
 
     step = 0  # number of policy updates (forward + backward + optim)
-
+    # from pathlib import Path
+    # cfg.checkpoint_path = Path("/home/dayuan/nas/models/fact_mixed_pwms_50chunk_2dec/checkpoints/300000")
     if cfg.resume:
         step, optimizer, lr_scheduler = load_training_state(cfg.checkpoint_path, optimizer, lr_scheduler)
 
     num_learnable_params = sum(p.numel() for p in policy.parameters() if p.requires_grad)
     num_total_params = sum(p.numel() for p in policy.parameters())
+
+    # Load second dataset for concatenation
+    takeoff_repo_id = "leledeyuan/takeoff-tshirt"
+    takeoff_cfg = deepcopy(cfg)
+    takeoff_cfg.dataset.repo_id = takeoff_repo_id
+    takeoff_dataset = make_dataset(takeoff_cfg)
+    takeoff_dataset = SubsetStateActionDataset(takeoff_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
+    takeoff_dataset = PhaseShiftedDataset(takeoff_dataset, phase_offset=5)
+    
+    playing_repo_id = "leledeyuan/playing-phase"
+    playing_cfg = deepcopy(cfg)
+    playing_cfg.dataset.repo_id = playing_repo_id
+    playing_dataset = make_dataset(playing_cfg)
+    playing_dataset = SubsetStateActionDataset(playing_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
+    playing_dataset = PhaseShiftedDataset(playing_dataset, phase_offset=8)
+
+    idle_repo_id = "leledeyuan/idle-phase"
+    idle_cfg = deepcopy(cfg)
+    idle_cfg.dataset.repo_id = idle_repo_id
+    idle_dataset = make_dataset(idle_cfg)
+    idle_dataset = SubsetStateActionDataset(idle_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
+    idle_dataset = PhaseShiftedDataset(idle_dataset, phase_offset=9)
+
+    dataset = MultiTaskDataset([dataset, takeoff_dataset, playing_dataset, idle_dataset])
 
     if is_main_process:
         logging.info(colored("Output dir:", "yellow", attrs=["bold"]) + f" {cfg.output_dir}")
