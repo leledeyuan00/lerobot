@@ -528,7 +528,8 @@ class FACT(nn.Module):
         if self.config.wrench_dim is not None:
             encoder_in_tokens.append(self.encoder_robot_wrench_input_proj(batch_wrench))
         if self.config.phase_num is not None:
-            encoder_in_tokens.append(self.encoder_phase_input_proj(batch_phase))
+            encoder_phase_embed = self.encoder_phase_input_proj(batch_phase)
+            encoder_in_tokens.append(encoder_phase_embed)
 
         # Environment state token.
         if self.config.env_state_feature:
@@ -567,6 +568,7 @@ class FACT(nn.Module):
         decoder_out = self.decoder(
             decoder_in,
             encoder_out,
+            cond= encoder_phase_embed if self.config.phase_num is not None else None,
             encoder_pos_embed=encoder_in_pos_embed,
             decoder_pos_embed=self.decoder_pos_embed.weight.unsqueeze(1),
         )
@@ -641,6 +643,38 @@ class ACTEncoderLayer(nn.Module):
         return x
 
 
+class _ShiftScaleMod(nn.Module):
+    def __init__(self, dim):
+        super().__init__()
+        self.act = nn.SiLU()
+        self.scale = nn.Linear(dim, dim)
+        self.shift = nn.Linear(dim, dim)
+
+    def forward(self, x, c):
+        c = self.act(c)
+        return x * self.scale(c)[None] + self.shift(c)[None]
+
+    def reset_parameters(self):
+        nn.init.xavier_uniform_(self.scale.weight)
+        nn.init.xavier_uniform_(self.shift.weight)
+        nn.init.zeros_(self.scale.bias)
+        nn.init.zeros_(self.shift.bias)
+
+
+class _ZeroScaleMod(nn.Module):
+    def __init__(self, dim):
+        super().__init__()
+        self.act = nn.SiLU()
+        self.scale = nn.Linear(dim, dim)
+
+    def forward(self, x, c):
+        c = self.act(c)
+        return x * self.scale(c)[None]
+
+    def reset_parameters(self):
+        nn.init.zeros_(self.scale.weight)
+        nn.init.zeros_(self.scale.bias)
+
 class FACTDecoder(nn.Module):
     def __init__(self, config: FACTConfig):
         """Convenience module for running multiple decoder layers followed by normalization."""
@@ -652,12 +686,13 @@ class FACTDecoder(nn.Module):
         self,
         x: Tensor,
         encoder_out: Tensor,
+        cond: Tensor | None = None, # as Phase information
         decoder_pos_embed: Tensor | None = None,
         encoder_pos_embed: Tensor | None = None,
     ) -> Tensor:
         for layer in self.layers:
             x = layer(
-                x, encoder_out, decoder_pos_embed=decoder_pos_embed, encoder_pos_embed=encoder_pos_embed
+                x, encoder_out, cond=cond, decoder_pos_embed=decoder_pos_embed, encoder_pos_embed=encoder_pos_embed
             )
         if self.norm is not None:
             x = self.norm(x)
@@ -682,6 +717,12 @@ class ACTDecoderLayer(nn.Module):
         self.dropout2 = nn.Dropout(config.dropout)
         self.dropout3 = nn.Dropout(config.dropout)
 
+        # Conditioning layer (for phase information)
+        self.atten_mod1 = _ShiftScaleMod(config.dim_model)
+        self.atten_mod2 = _ZeroScaleMod(config.dim_model)
+        self.mlp_mod1 = _ShiftScaleMod(config.dim_model)
+        self.mlp_mod2 = _ZeroScaleMod(config.dim_model)
+
         self.activation = get_activation_fn(config.feedforward_activation)
         self.pre_norm = config.pre_norm
 
@@ -692,6 +733,7 @@ class ACTDecoderLayer(nn.Module):
         self,
         x: Tensor,
         encoder_out: Tensor,
+        cond: Tensor | None = None, # as Phase information
         decoder_pos_embed: Tensor | None = None,
         encoder_pos_embed: Tensor | None = None,
     ) -> Tensor:
@@ -717,20 +759,37 @@ class ACTDecoderLayer(nn.Module):
         else:
             x = self.norm1(x)
             skip = x
+        
+        # Conditioning with phase information
+        if cond is not None:
+            x = self.atten_mod1(x, cond)
         x = self.multihead_attn(
             query=self.maybe_add_pos_embed(x, decoder_pos_embed),
             key=self.maybe_add_pos_embed(encoder_out, encoder_pos_embed),
             value=encoder_out,
         )[0]  # select just the output, not the attention weights
-        x = skip + self.dropout2(x)
+        if cond is not None:
+            x = self.atten_mod2(self.dropout2(x), cond)
+        else:
+            x = self.dropout2(x)
+        x = skip + x
+
         if self.pre_norm:
             skip = x
             x = self.norm3(x)
         else:
             x = self.norm2(x)
             skip = x
+
+        # Conditioning with phase information
+        if cond is not None:
+            x = self.mlp_mod1(x, cond)
         x = self.linear2(self.dropout(self.activation(self.linear1(x))))
-        x = skip + self.dropout3(x)
+        if cond is not None:
+            x = self.mlp_mod2(self.dropout3(x), cond)
+        else:
+            x = self.dropout3(x)
+        x = skip + x
         if not self.pre_norm:
             x = self.norm3(x)
         return x
