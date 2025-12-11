@@ -22,6 +22,7 @@ from .smolvla.processor_smolvla import SmolVLANewLineProcessor
 from .tdmpc.configuration_tdmpc import TDMPCConfig as TDMPCConfig
 from .vqbet.configuration_vqbet import VQBeTConfig as VQBeTConfig
 from .fact.configuration_fact import FACTConfig as FACTConfig
+from .fdp.configuration_fdp import FdpConfig as FdpConfig
 
 __all__ = [
     "ACTConfig",
@@ -33,4 +34,5 @@ __all__ = [
     "VQBeTConfig",
     "GrootConfig",
     "FACTConfig",
+    "FdpConfig",
 ]

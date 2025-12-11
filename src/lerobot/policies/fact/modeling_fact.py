@@ -642,6 +642,41 @@ class ACTEncoderLayer(nn.Module):
             x = self.norm2(x)
         return x
 
+class _AdaLNMod(nn.Module):
+    def __init__(self, dim):
+        super().__init__()
+        self.act = nn.SiLU()
+        self.linear = nn.Linear(dim, dim * 2)
+
+    def forward(self, x, c):
+        # x: (Seq, Batch, Dim)
+        # c: (Batch, Dim)
+        
+        c = self.act(c)
+        # scale, shift: (Batch, Dim)
+        scale, shift = self.linear(c).chunk(2, dim=-1)
+        
+        x = x * (1 + scale.unsqueeze(0)) + shift.unsqueeze(0)
+        return x
+
+    def reset_parameters(self):
+        nn.init.zeros_(self.linear.weight)
+        nn.init.zeros_(self.linear.bias)
+
+class _ZeroGate(nn.Module):
+    def __init__(self, dim):
+        super().__init__()
+        self.act = nn.SiLU()
+        self.linear = nn.Linear(dim, dim)
+
+    def forward(self, x, c):
+        c = self.act(c)
+        gate = self.linear(c)
+        return x * gate.unsqueeze(0)
+
+    def reset_parameters(self):
+        nn.init.zeros_(self.linear.weight)
+        nn.init.zeros_(self.linear.bias)
 
 class _ShiftScaleMod(nn.Module):
     def __init__(self, dim):
@@ -718,10 +753,14 @@ class ACTDecoderLayer(nn.Module):
         self.dropout3 = nn.Dropout(config.dropout)
 
         # Conditioning layer (for phase information)
-        self.atten_mod1 = _ShiftScaleMod(config.dim_model)
-        self.atten_mod2 = _ZeroScaleMod(config.dim_model)
-        self.mlp_mod1 = _ShiftScaleMod(config.dim_model)
-        self.mlp_mod2 = _ZeroScaleMod(config.dim_model)
+        # self.atten_mod1 = _ShiftScaleMod(config.dim_model)
+        # self.atten_mod2 = _ZeroScaleMod(config.dim_model)
+        # self.mlp_mod1 = _ShiftScaleMod(config.dim_model)
+        # self.mlp_mod2 = _ZeroScaleMod(config.dim_model)
+        self.atten_mod = _AdaLNMod(config.dim_model)
+        self.atten_gate = _ZeroGate(config.dim_model)
+        self.atten_mod.reset_parameters()
+        self.atten_gate.reset_parameters()
 
         self.activation = get_activation_fn(config.feedforward_activation)
         self.pre_norm = config.pre_norm
@@ -762,14 +801,14 @@ class ACTDecoderLayer(nn.Module):
         
         # Conditioning with phase information
         if cond is not None:
-            x = self.atten_mod1(x, cond)
+            x = self.atten_mod(x, cond)
         x = self.multihead_attn(
             query=self.maybe_add_pos_embed(x, decoder_pos_embed),
             key=self.maybe_add_pos_embed(encoder_out, encoder_pos_embed),
             value=encoder_out,
         )[0]  # select just the output, not the attention weights
         if cond is not None:
-            x = self.atten_mod2(self.dropout2(x), cond)
+            x = self.atten_gate(self.dropout2(x), cond)
         else:
             x = self.dropout2(x)
         x = skip + x
@@ -782,13 +821,13 @@ class ACTDecoderLayer(nn.Module):
             skip = x
 
         # Conditioning with phase information
-        if cond is not None:
-            x = self.mlp_mod1(x, cond)
+        # if cond is not None:
+        #     x = self.mlp_mod1(x, cond)
         x = self.linear2(self.dropout(self.activation(self.linear1(x))))
-        if cond is not None:
-            x = self.mlp_mod2(self.dropout3(x), cond)
-        else:
-            x = self.dropout3(x)
+        # if cond is not None:
+        #     x = self.mlp_mod2(self.dropout3(x), cond)
+        # else:
+        x = self.dropout3(x)
         x = skip + x
         if not self.pre_norm:
             x = self.norm3(x)
