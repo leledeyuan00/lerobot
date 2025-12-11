@@ -63,9 +63,9 @@ class RotTransProcessorStep(ProcessorStep):
         obs = new_transition[TransitionKey.OBSERVATION]
         state = obs[OBS_STATE]
         left_quat = state[..., 3:7] # xyzw
-        left_quat = torch.cat([left_quat[..., 1:4], left_quat[..., 0:1]], dim=-1)  # to wxyz
+        left_quat = torch.cat([left_quat[..., 3:4], left_quat[..., 0:3]], dim=-1)  # to wxyz
         right_quat = state[..., 16:20] # xyzw
-        right_quat = torch.cat([right_quat[..., 1:4], right_quat[..., 0:1]], dim=-1)  # to wxyz
+        right_quat = torch.cat([right_quat[..., 3:4], right_quat[..., 0:3]], dim=-1)  # to wxyz
 
         left_rot_6d = matrix_to_rotation_6d(quaternion_to_matrix(left_quat))
         right_rot_6d = matrix_to_rotation_6d(quaternion_to_matrix(right_quat))
@@ -74,9 +74,9 @@ class RotTransProcessorStep(ProcessorStep):
         action = new_transition[TransitionKey.ACTION]
         if action is not None:
             left_quat_action = action[..., 3:7]
-            left_quat_action = torch.cat([left_quat_action[..., 1:4], left_quat_action[..., 0:1]], dim=-1)  # to wxyz
+            left_quat_action = torch.cat([left_quat_action[..., 3:4], left_quat_action[..., 0:3]], dim=-1)  # to wxyz
             right_quat_action = action[..., 11:15]
-            right_quat_action = torch.cat([right_quat_action[..., 1:4], right_quat_action[..., 0:1]], dim=-1)  # to wxyz
+            right_quat_action = torch.cat([right_quat_action[..., 3:4], right_quat_action[..., 0:3]], dim=-1)  # to wxyz
             
             left_rot_6d_action = matrix_to_rotation_6d(quaternion_to_matrix(left_quat_action))
             right_rot_6d_action = matrix_to_rotation_6d(quaternion_to_matrix(right_quat_action))
