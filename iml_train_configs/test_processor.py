@@ -6,6 +6,7 @@ from typing import Dict
 # load dataset
 from lerobot.envs.utils import preprocess_observation
 from lerobot.policies.factory import make_policy, make_pre_post_processors
+from lerobot.utils.rotation_utils import rotation_6d_to_matrix, matrix_to_quaternion, quaternion_to_matrix, matrix_to_rotation_6d
 from lerobot.policies.fact.configuration_fact import FACTConfig
 
 from lerobot.datasets.lerobot_dataset import LeRobotDataset
@@ -72,7 +73,7 @@ def main():
     
     # 3. Format Conversion (Bridge)
     config = FACTConfig()
-    config.phase_num = 3
+    # config.phase_num = 3
     preprocessor, postprocessor = make_pre_post_processors(
         policy_cfg=config,
     )
@@ -82,7 +83,11 @@ def main():
     print("\n🔄 Running Processor...")
     try:
         # 5. Process the Batch
+        print(f"original left ee quaternion:", raw_batch[OBS_STATE][0, 3:7])
+        print(f"original left ee 6d rotation:", matrix_to_rotation_6d(quaternion_to_matrix(raw_batch[OBS_STATE][0, 3:7])))
         output_transition = preprocessor(raw_batch)
+        print(f"processed left ee 6d:", output_transition["observation_rotation"][0, :6])
+        print(f"processed left ee quaternion:", matrix_to_quaternion(rotation_6d_to_matrix(output_transition["observation_rotation"][0, :6])))
         
         print("\n🎉 Processor succeeded.")
         
