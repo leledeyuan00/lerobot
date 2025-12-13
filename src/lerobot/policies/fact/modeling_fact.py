@@ -310,10 +310,10 @@ class FACT(nn.Module):
                 self.vae_encoder_robot_wrench_input_proj = nn.Linear(
                     self.config.wrench_dim, config.dim_model
                 )
-            # if self.config.phase_num is not None:
-            #     self.vae_encoder_phase_input_proj = nn.Embedding(
-            #         self.config.phase_num, config.dim_model
-                # )
+            if self.config.phase_num is not None:
+                self.vae_encoder_phase_input_proj = nn.Embedding(
+                    self.config.phase_num, config.dim_model
+                )
             # Projection layer for action (joint-space target) to hidden dimension.
             self.vae_encoder_action_input_proj = nn.Linear(
                 self.config.selected_action_shape[0],
@@ -328,8 +328,8 @@ class FACT(nn.Module):
                 num_input_token_encoder += 1
             if self.config.wrench_dim is not None:
                 num_input_token_encoder += 1 # modified to account for wrench input
-            # if self.config.phase_num is not None:
-            #     num_input_token_encoder += 1 # modified to account for phase input
+            if self.config.phase_num is not None:
+                num_input_token_encoder += 1 # modified to account for phase input
             self.register_buffer(
                 "vae_encoder_pos_enc",
                 create_sinusoidal_pos_embedding(num_input_token_encoder, config.dim_model).unsqueeze(0),
@@ -384,8 +384,8 @@ class FACT(nn.Module):
             self.n_1d_tokens += 1
         if self.config.wrench_dim is not None:
             self.n_1d_tokens += 1 # modified to account for wrench input
-        # if self.config.phase_num is not None:
-        #     self.n_1d_tokens += 1 # modified to account for phase input
+        if self.config.phase_num is not None:
+            self.n_1d_tokens += 1 # modified to account for phase input
         
         self.encoder_1d_feature_pos_embed = nn.Embedding(self.n_1d_tokens, config.dim_model)
         if self.config.image_features:
@@ -460,9 +460,9 @@ class FACT(nn.Module):
             if self.config.wrench_dim is not None:
                 robot_wrench_embed = self.vae_encoder_robot_wrench_input_proj(batch_wrench)  # (B, D)
                 robot_wrench_embed = robot_wrench_embed.unsqueeze(1)  # (B, 1, D)
-            # if self.config.phase_num is not None:
-            #     phase_embed = self.vae_encoder_phase_input_proj(batch_phase)  # (B, D)
-            #     phase_embed = phase_embed.unsqueeze(1)  # (B, 1, D)
+            if self.config.phase_num is not None:
+                phase_embed = self.vae_encoder_phase_input_proj(batch_phase)  # (B, D)
+                phase_embed = phase_embed.unsqueeze(1)  # (B, 1, D)
 
             selected_action_indices = [0,1,2, 7,8,9,10, 15]
             batch_action = batch[ACTION][..., selected_action_indices]
@@ -470,12 +470,12 @@ class FACT(nn.Module):
             batch_action = torch.cat([batch_action, batch_6d_rot], dim=-1)
             action_embed = self.vae_encoder_action_input_proj(batch_action)  # (B, S, D)
 
-            # if self.config.robot_state_feature and self.config.wrench_dim is not None and self.config.phase_num is not None:
-            #     vae_encoder_input = [cls_embed, robot_state_embed, robot_wrench_embed, phase_embed, action_embed]  # (B, S+4, D)
-            if self.config.robot_state_feature and self.config.wrench_dim is not None:
+            if self.config.robot_state_feature and self.config.wrench_dim is not None and self.config.phase_num is not None:
+                vae_encoder_input = [cls_embed, robot_state_embed, robot_wrench_embed, phase_embed, action_embed]  # (B, S+4, D)
+            elif self.config.robot_state_feature and self.config.wrench_dim is not None:
                 vae_encoder_input = [cls_embed, robot_state_embed, robot_wrench_embed, action_embed]  # (B, S+3, D)
-            # elif self.config.robot_state_feature and self.config.phase_num is not None:
-            #     vae_encoder_input = [cls_embed, robot_state_embed, phase_embed, action_embed]  # (B, S+3, D)
+            elif self.config.robot_state_feature and self.config.phase_num is not None:
+                vae_encoder_input = [cls_embed, robot_state_embed, phase_embed, action_embed]  # (B, S+3, D)
             elif self.config.robot_state_feature:
                 vae_encoder_input = [cls_embed, robot_state_embed, action_embed] # (B, S+2, D)
             else:
@@ -529,7 +529,7 @@ class FACT(nn.Module):
             encoder_in_tokens.append(self.encoder_robot_wrench_input_proj(batch_wrench))
         if self.config.phase_num is not None:
             encoder_phase_embed = self.encoder_phase_input_proj(batch_phase) # (B, D) as FiLM condition input to encoder
-        #     encoder_in_tokens.append(encoder_phase_embed)
+            encoder_in_tokens.append(encoder_phase_embed)
 
         # Environment state token.
         if self.config.env_state_feature:

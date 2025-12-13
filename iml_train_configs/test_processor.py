@@ -92,6 +92,7 @@ def main():
         print("\n🎉 Processor succeeded.")
         
         print("Processed Keys:", list(output_transition.keys()))
+        print("Task indexes:", output_transition["task_index"])
 
         # Print original and processed observation state shapes
         print("observation rotation:", output_transition["observation_rotation"])

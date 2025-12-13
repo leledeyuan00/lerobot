@@ -3,9 +3,10 @@ from torch.utils.data import Dataset, ConcatDataset
 import copy
 
 class PhaseShiftedDataset(Dataset):
-    def __init__(self, dataset, phase_offset):
+    def __init__(self, dataset, phase_offset, main_task = None):
         self.dataset = dataset
         self.phase_offset = phase_offset
+        self.main_task = main_task
         # Inherit meta from the original dataset
         # Inherit stats if available
         self.meta = copy.deepcopy(self.dataset.meta)
@@ -23,6 +24,11 @@ class PhaseShiftedDataset(Dataset):
             state = item['observation.state']
             # Here we assume the last element of the state vector is the phase
             state[-1] = state[-1] + self.phase_offset
+            if self.main_task is not None:
+                # Extend on -2 dimension to include main_task
+                main_task = torch.tensor([self.main_task], dtype=state.dtype)
+                state = torch.cat([state[:-2], main_task, state[-1:]])
+
             item['observation.state'] = state
             
         return item
@@ -31,7 +37,40 @@ class PhaseShiftedDataset(Dataset):
         # 就去原始 dataset 里找
         return getattr(self.dataset, name)
 
+class PhaseSetDataset(Dataset):
+    def __init__(self, dataset, phase_set, main_task = None):
+        self.dataset = dataset
+        self.phase_set = phase_set
+        self.main_task = main_task
+        # Inherit meta from the original dataset
+        # Inherit stats if available
+        self.meta = copy.deepcopy(self.dataset.meta)
 
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, idx):
+        # 1. Fetch the original item
+        item = self.dataset[idx]
+
+        # 2. Dynamically modify the phase in the observation.state
+        if 'observation.state' in item:
+            # Assuming 'phase' is stored in a specific index of the state vector
+            state = item['observation.state']
+            # Here we assume the last element of the state vector is the phase
+            state[-1] = self.phase_set
+            if self.main_task is not None:
+                # Extend on -2 dimension to include main_task
+                # main_task = torch.tensor([self.main_task], dtype=state.dtype)
+                state = torch.cat([state[:-1], torch.tensor([self.main_task]), state[-1:]])
+            item['observation.state'] = state
+            
+        return item
+    def __getattr__(self, name):
+        # 关键：如果在当前类找不到属性（比如 num_frames, stats），
+        # 就去原始 dataset 里找
+        return getattr(self.dataset, name)
+    
 class MultiTaskDataset(Dataset):
     """
     用于替代 ConcatDataset 的增强版 Wrapper。

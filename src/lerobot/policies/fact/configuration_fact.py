@@ -130,6 +130,8 @@ class FACTConfig(PreTrainedConfig):
     wrench_dim: None | int = None
     # Phase
     phase_num: None | int = None
+    # main_task
+    use_main_task: None | bool = None
 
     # Inference.
     # Note: the value used in FACT when temporal ensembling is enabled is 0.01.
