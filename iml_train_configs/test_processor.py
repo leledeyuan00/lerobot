@@ -14,6 +14,7 @@ from lerobot.utils.robot_utils import busy_wait
 
 from lerobot.processor.quaternion_observations_processor import RotTransProcessorStep
 from subset_dataset import SubsetStateActionDataset
+from phase_shift_dataset import PhaseShiftedDataset, PhaseSetDataset
 
 import torch
 from torch.utils.data import DataLoader
@@ -56,6 +57,12 @@ def main():
         return
 
     dataset = SubsetStateActionDataset(dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
+    first_data = dataset[0]
+    print("first data before phase shift:", first_data["observation.state"])
+
+    dataset = PhaseShiftedDataset(dataset, phase_offset=5, main_task=1)
+    first_data = dataset[0]
+    print("first data after phase shift:", first_data.keys())
 
     # 2. Create DataLoader to get a Batch
     batch_size = 2
@@ -73,7 +80,8 @@ def main():
     
     # 3. Format Conversion (Bridge)
     config = FACTConfig()
-    # config.phase_num = 3
+    config.phase_num = 8
+    config.main_task_num = 2
     preprocessor, postprocessor = make_pre_post_processors(
         policy_cfg=config,
     )

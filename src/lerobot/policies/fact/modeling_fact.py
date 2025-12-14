@@ -314,6 +314,10 @@ class FACT(nn.Module):
                 self.vae_encoder_phase_input_proj = nn.Embedding(
                     self.config.phase_num, config.dim_model
                 )
+            if self.config.main_task_num is not None:
+                self.vae_encoder_main_task_input_proj = nn.Embedding(
+                    self.config.main_task_num, config.dim_model
+                )
             # Projection layer for action (joint-space target) to hidden dimension.
             self.vae_encoder_action_input_proj = nn.Linear(
                 self.config.selected_action_shape[0],
@@ -365,6 +369,10 @@ class FACT(nn.Module):
         if self.config.phase_num is not None:
             self.encoder_phase_input_proj = nn.Embedding(
                 self.config.phase_num, config.dim_model
+            )
+        if self.config.main_task_num is not None:
+            self.encoder_main_task_input_proj = nn.Embedding(
+                self.config.main_task_num, config.dim_model
             )
 
         if self.config.env_state_feature:
@@ -444,6 +452,9 @@ class FACT(nn.Module):
         if self.config.phase_num is not None:
             batch_phase = batch["phase"]  # (B, 1)
             batch_phase = batch_phase.flatten().long()
+        if self.config.main_task_num is not None:
+            batch_main_task = batch["observation.main_task"]  # (B, 1)
+            batch_main_task = batch_main_task.flatten().long()
         batch_rot_state = batch["observation_rotation"] # (B, 12)
 
         batch_pose = torch.cat([batch_position, batch_rot_state], dim=-1)  # (B, 18)
@@ -463,6 +474,10 @@ class FACT(nn.Module):
             if self.config.phase_num is not None:
                 phase_embed = self.vae_encoder_phase_input_proj(batch_phase)  # (B, D)
                 phase_embed = phase_embed.unsqueeze(1)  # (B, 1, D)
+                if self.config.main_task_num is not None:
+                    main_task_embed = self.vae_encoder_main_task_input_proj(batch_main_task)  # (B, D)
+                    main_task_embed = main_task_embed.unsqueeze(1)  # (B, 1, D)
+                    phase_embed = phase_embed + main_task_embed
 
             selected_action_indices = [0,1,2, 7,8,9,10, 15]
             batch_action = batch[ACTION][..., selected_action_indices]
@@ -529,6 +544,9 @@ class FACT(nn.Module):
             encoder_in_tokens.append(self.encoder_robot_wrench_input_proj(batch_wrench))
         if self.config.phase_num is not None:
             encoder_phase_embed = self.encoder_phase_input_proj(batch_phase) # (B, D) as FiLM condition input to encoder
+            if self.config.main_task_num is not None:
+                encoder_main_task_embed = self.encoder_main_task_input_proj(batch_main_task)  # (B, D)
+                encoder_phase_embed = encoder_phase_embed + encoder_main_task_embed
             encoder_in_tokens.append(encoder_phase_embed)
 
         # Environment state token.

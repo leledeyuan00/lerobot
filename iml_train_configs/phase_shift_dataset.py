@@ -25,9 +25,8 @@ class PhaseShiftedDataset(Dataset):
             # Here we assume the last element of the state vector is the phase
             state[-1] = state[-1] + self.phase_offset
             if self.main_task is not None:
-                # Extend on -2 dimension to include main_task
                 main_task = torch.tensor([self.main_task], dtype=state.dtype)
-                state = torch.cat([state[:-2], main_task, state[-1:]])
+                item['observation.main_task'] = main_task
 
             item['observation.state'] = state
             
@@ -60,9 +59,8 @@ class PhaseSetDataset(Dataset):
             # Here we assume the last element of the state vector is the phase
             state[-1] = self.phase_set
             if self.main_task is not None:
-                # Extend on -2 dimension to include main_task
-                # main_task = torch.tensor([self.main_task], dtype=state.dtype)
-                state = torch.cat([state[:-1], torch.tensor([self.main_task]), state[-1:]])
+                main_task = torch.tensor([self.main_task], dtype=state.dtype)
+                item['observation.main_task'] = main_task
             item['observation.state'] = state
             
         return item

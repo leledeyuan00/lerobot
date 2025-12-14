@@ -291,7 +291,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     hanging_main_cfg.dataset.episodes = random.sample(range(100), num_episodes)
     hanging_dataset_main = make_dataset(hanging_main_cfg)
     hanging_dataset_main = SubsetStateActionDataset(hanging_dataset_main, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    hanging_dataset_main = PhaseSetDataset(hanging_dataset_main, phase_set=0) # as hanging main task phase
+    hanging_dataset_main = PhaseSetDataset(hanging_dataset_main, phase_set=0, main_task=0) # as hanging main task phase
 
     takeoff_main_repo_id = "leledeyuan/takeoff-tshirt"
     takeoff_main_cfg = deepcopy(cfg)
@@ -300,40 +300,54 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     takeoff_main_cfg.dataset.episodes = random.sample(range(100), num_episodes)
     takeoff_dataset_main = make_dataset(takeoff_main_cfg)
     takeoff_dataset_main = SubsetStateActionDataset(takeoff_dataset_main, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    takeoff_dataset_main = PhaseSetDataset(takeoff_dataset_main, phase_set=1) # as takeoff main task phase
+    takeoff_dataset_main = PhaseSetDataset(takeoff_dataset_main, phase_set=0, main_task=1) # as takeoff main task phase
 
     # Load second dataset for concatenation
-    dataset = PhaseShiftedDataset(dataset, phase_offset=2)
+    dataset = PhaseShiftedDataset(dataset, phase_offset=1, main_task=0)
 
     takeoff_repo_id = "leledeyuan/takeoff-tshirt"
     takeoff_cfg = deepcopy(cfg)
     takeoff_cfg.dataset.repo_id = takeoff_repo_id
     takeoff_dataset = make_dataset(takeoff_cfg)
     takeoff_dataset = SubsetStateActionDataset(takeoff_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    takeoff_dataset = PhaseShiftedDataset(takeoff_dataset, phase_offset=7)
+    takeoff_dataset = PhaseShiftedDataset(takeoff_dataset, phase_offset=1, main_task=1)
     
     playing_repo_id = "leledeyuan/playing-phase"
     playing_cfg = deepcopy(cfg)
     playing_cfg.dataset.repo_id = playing_repo_id
     playing_dataset = make_dataset(playing_cfg)
     playing_dataset = SubsetStateActionDataset(playing_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    playing_dataset = PhaseShiftedDataset(playing_dataset, phase_offset=10)
+    playing_dataset_hanging = deepcopy(playing_dataset)
+    playing_dataset_hanging = PhaseShiftedDataset(playing_dataset_hanging, phase_offset=6, main_task=0)
+    playing_dataset_takeoff = deepcopy(playing_dataset)
+    playing_dataset_takeoff = PhaseShiftedDataset(playing_dataset_takeoff, phase_offset=6, main_task=1)
 
     inject_repo_id = "leledeyuan/inject-phase"
     inject_cfg = deepcopy(cfg)
     inject_cfg.dataset.repo_id = inject_repo_id
     inject_dataset = make_dataset(inject_cfg)
     inject_dataset = SubsetStateActionDataset(inject_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    inject_dataset = PhaseShiftedDataset(inject_dataset, phase_offset=11)
+    inject_dataset_hanging = deepcopy(inject_dataset)
+    inject_dataset_hanging = PhaseShiftedDataset(inject_dataset_hanging, phase_offset=7, main_task=0)
+    inject_dataset_takeoff = deepcopy(inject_dataset)
+    inject_dataset_takeoff = PhaseShiftedDataset(inject_dataset_takeoff, phase_offset=7, main_task=1)
 
     idle_repo_id = "leledeyuan/idle-phase"
     idle_cfg = deepcopy(cfg)
     idle_cfg.dataset.repo_id = idle_repo_id
     idle_dataset = make_dataset(idle_cfg)
     idle_dataset = SubsetStateActionDataset(idle_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    idle_dataset = PhaseShiftedDataset(idle_dataset, phase_offset=12)
+    idle_dataset_hanging = deepcopy(idle_dataset)
+    idle_dataset_hanging = PhaseShiftedDataset(idle_dataset_hanging, phase_offset=8, main_task=0)
+    idle_dataset_takeoff = deepcopy(idle_dataset)
+    idle_dataset_takeoff = PhaseShiftedDataset(idle_dataset_takeoff, phase_offset=8, main_task=1)
 
-    dataset = MultiTaskDataset([hanging_dataset_main, takeoff_dataset_main, dataset, takeoff_dataset, playing_dataset, inject_dataset, idle_dataset])
+
+    dataset = MultiTaskDataset([
+                                hanging_dataset_main, 
+                                dataset, playing_dataset_hanging, inject_dataset_hanging, idle_dataset_hanging,
+                                 takeoff_dataset_main,  takeoff_dataset, playing_dataset_takeoff, inject_dataset_takeoff, idle_dataset_takeoff
+                                 ])
 
     if is_main_process:
         logging.info(colored("Output dir:", "yellow", attrs=["bold"]) + f" {cfg.output_dir}")
