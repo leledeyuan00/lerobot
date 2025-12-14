@@ -225,7 +225,8 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
 
     if is_main_process:
         logging.info("Creating policy")
-    # cfg.policy.pretrained_path = "/home/dayuan/nas/models/fact_mixed_pwms_50chunk_2dec/checkpoints/300000/pretrained_model"
+    # For resuming from pretrained model
+    # cfg.policy.pretrained_path = "/home/dayuan/nas/models/factfilmencmp_mixed_pwms_50chunk_2dec/checkpoints/140000/pretrained_model"
     policy = make_policy(
         cfg=cfg.policy,
         ds_meta=dataset.meta,
@@ -274,8 +275,9 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     optimizer, lr_scheduler = make_optimizer_and_scheduler(cfg, policy)
 
     step = 0  # number of policy updates (forward + backward + optim)
+    # For resuming from checkpoint
     # from pathlib import Path
-    # cfg.checkpoint_path = Path("/home/dayuan/nas/models/fact_mixed_pwms_50chunk_2dec/checkpoints/300000")
+    # cfg.checkpoint_path = Path("/home/dayuan/nas/models/factfilmencmp_mixed_pwms_50chunk_2dec/checkpoints/140000")
     if cfg.resume:
         step, optimizer, lr_scheduler = load_training_state(cfg.checkpoint_path, optimizer, lr_scheduler)
 
