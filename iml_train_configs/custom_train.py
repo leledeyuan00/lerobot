@@ -326,14 +326,14 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     inject_cfg.dataset.repo_id = inject_repo_id
     inject_dataset = make_dataset(inject_cfg)
     inject_dataset = SubsetStateActionDataset(inject_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    inject_dataset = PhaseShiftedDataset(inject_dataset, phase_offset=11)
+    inject_dataset = PhaseSetDataset(inject_dataset, phase_set=2)
 
     idle_repo_id = "leledeyuan/idle-phase"
     idle_cfg = deepcopy(cfg)
     idle_cfg.dataset.repo_id = idle_repo_id
     idle_dataset = make_dataset(idle_cfg)
     idle_dataset = SubsetStateActionDataset(idle_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    idle_dataset = PhaseShiftedDataset(idle_dataset, phase_offset=12)
+    idle_dataset = PhaseShiftedDataset(idle_dataset, phase_offset=11)
 
     dataset = MultiTaskDataset([hanging_dataset_main, takeoff_dataset_main, dataset, takeoff_dataset, playing_dataset, inject_dataset, idle_dataset])
 
