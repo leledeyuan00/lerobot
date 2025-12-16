@@ -297,7 +297,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     hanging_recovery_cfg.dataset.repo_id = hanging_recovery_repo_id
     hanging_recovery_dataset = make_dataset(hanging_recovery_cfg)
     hanging_recovery_dataset = SubsetStateActionDataset(hanging_recovery_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    hanging_recovery_dataset = PhaseShiftedDataset(hanging_recovery_dataset, phase_offset=6)
+    hanging_recovery_dataset = PhaseShiftedDataset(hanging_recovery_dataset, phase_offset=8)
 
     hanging_recovery_dataset_copy = deepcopy(hanging_recovery_dataset) # expand data size by 2
 
@@ -306,7 +306,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     hanging_recovery2_cfg.dataset.repo_id = hanging_recovery2_repo_id
     hanging_recovery2_dataset = make_dataset(hanging_recovery2_cfg)
     hanging_recovery2_dataset = SubsetStateActionDataset(hanging_recovery2_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    hanging_recovery2_dataset = PhaseShiftedDataset(hanging_recovery2_dataset, phase_offset=7)
+    hanging_recovery2_dataset = PhaseShiftedDataset(hanging_recovery2_dataset, phase_offset=9)
 
     hanging_recovery2_dataset_copy = deepcopy(hanging_recovery2_dataset) # expand data size by 2
 
@@ -315,7 +315,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     takeoff_recovery_cfg.dataset.repo_id = takeoff_recovery_repo_id
     takeoff_recovery_dataset = make_dataset(takeoff_recovery_cfg)
     takeoff_recovery_dataset = SubsetStateActionDataset(takeoff_recovery_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    takeoff_recovery_dataset = PhaseShiftedDataset(takeoff_recovery_dataset, phase_offset=8)
+    takeoff_recovery_dataset = PhaseShiftedDataset(takeoff_recovery_dataset, phase_offset=10)
 
     dataset = MultiTaskDataset([dataset, hanging_recovery_dataset_copy, hanging_recovery2_dataset_copy, 
                                 takeoff_dataset, hanging_recovery_dataset, hanging_recovery2_dataset, takeoff_recovery_dataset])
