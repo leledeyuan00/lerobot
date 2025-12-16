@@ -284,58 +284,41 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     num_learnable_params = sum(p.numel() for p in policy.parameters() if p.requires_grad)
     num_total_params = sum(p.numel() for p in policy.parameters())
 
-    # Load small portion (10) of dataset for running whole task smoothly
-    hanging_main_repo_id = "leledeyuan/hanging-tshirt"
-    hanging_main_cfg = deepcopy(cfg)
-    hanging_main_cfg.dataset.repo_id = hanging_main_repo_id
-    num_episodes = 10
-    import random
-    hanging_main_cfg.dataset.episodes = random.sample(range(100), num_episodes)
-    hanging_dataset_main = make_dataset(hanging_main_cfg)
-    hanging_dataset_main = SubsetStateActionDataset(hanging_dataset_main, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    hanging_dataset_main = PhaseSetDataset(hanging_dataset_main, phase_set=0) # as hanging main task phase
-
-    takeoff_main_repo_id = "leledeyuan/takeoff-tshirt"
-    takeoff_main_cfg = deepcopy(cfg)
-    takeoff_main_cfg.dataset.repo_id = takeoff_main_repo_id
-    num_episodes = 10
-    takeoff_main_cfg.dataset.episodes = random.sample(range(100), num_episodes)
-    takeoff_dataset_main = make_dataset(takeoff_main_cfg)
-    takeoff_dataset_main = SubsetStateActionDataset(takeoff_dataset_main, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    takeoff_dataset_main = PhaseSetDataset(takeoff_dataset_main, phase_set=1) # as takeoff main task phase
-
     # Load second dataset for concatenation
-    dataset = PhaseShiftedDataset(dataset, phase_offset=2)
-
     takeoff_repo_id = "leledeyuan/takeoff-tshirt"
     takeoff_cfg = deepcopy(cfg)
     takeoff_cfg.dataset.repo_id = takeoff_repo_id
     takeoff_dataset = make_dataset(takeoff_cfg)
     takeoff_dataset = SubsetStateActionDataset(takeoff_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    takeoff_dataset = PhaseShiftedDataset(takeoff_dataset, phase_offset=7)
+    takeoff_dataset = PhaseShiftedDataset(takeoff_dataset, phase_offset=5)
     
-    playing_repo_id = "leledeyuan/playing-phase"
-    playing_cfg = deepcopy(cfg)
-    playing_cfg.dataset.repo_id = playing_repo_id
-    playing_dataset = make_dataset(playing_cfg)
-    playing_dataset = SubsetStateActionDataset(playing_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    playing_dataset = PhaseShiftedDataset(playing_dataset, phase_offset=10)
+    hanging_recovery_repo_id = "leledeyuan/hanging-recovery-phase"
+    hanging_recovery_cfg = deepcopy(cfg)
+    hanging_recovery_cfg.dataset.repo_id = hanging_recovery_repo_id
+    hanging_recovery_dataset = make_dataset(hanging_recovery_cfg)
+    hanging_recovery_dataset = SubsetStateActionDataset(hanging_recovery_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
+    hanging_recovery_dataset = PhaseShiftedDataset(hanging_recovery_dataset, phase_offset=6)
 
-    inject_repo_id = "leledeyuan/inject-phase"
-    inject_cfg = deepcopy(cfg)
-    inject_cfg.dataset.repo_id = inject_repo_id
-    inject_dataset = make_dataset(inject_cfg)
-    inject_dataset = SubsetStateActionDataset(inject_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    inject_dataset = PhaseSetDataset(inject_dataset, phase_set=2)
+    hanging_recovery_dataset_copy = deepcopy(hanging_recovery_dataset) # expand data size by 2
 
-    idle_repo_id = "leledeyuan/idle-phase"
-    idle_cfg = deepcopy(cfg)
-    idle_cfg.dataset.repo_id = idle_repo_id
-    idle_dataset = make_dataset(idle_cfg)
-    idle_dataset = SubsetStateActionDataset(idle_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    idle_dataset = PhaseShiftedDataset(idle_dataset, phase_offset=11)
+    hanging_recovery2_repo_id = "leledeyuan/hanging-recovery2-phase"
+    hanging_recovery2_cfg = deepcopy(cfg)
+    hanging_recovery2_cfg.dataset.repo_id = hanging_recovery2_repo_id
+    hanging_recovery2_dataset = make_dataset(hanging_recovery2_cfg)
+    hanging_recovery2_dataset = SubsetStateActionDataset(hanging_recovery2_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
+    hanging_recovery2_dataset = PhaseShiftedDataset(hanging_recovery2_dataset, phase_offset=7)
 
-    dataset = MultiTaskDataset([hanging_dataset_main, takeoff_dataset_main, dataset, takeoff_dataset, playing_dataset, inject_dataset, idle_dataset])
+    hanging_recovery2_dataset_copy = deepcopy(hanging_recovery2_dataset) # expand data size by 2
+
+    takeoff_recovery_repo_id = "leledeyuan/takeoff-recovery-phase"
+    takeoff_recovery_cfg = deepcopy(cfg)
+    takeoff_recovery_cfg.dataset.repo_id = takeoff_recovery_repo_id
+    takeoff_recovery_dataset = make_dataset(takeoff_recovery_cfg)
+    takeoff_recovery_dataset = SubsetStateActionDataset(takeoff_recovery_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
+    takeoff_recovery_dataset = PhaseShiftedDataset(takeoff_recovery_dataset, phase_offset=8)
+
+    dataset = MultiTaskDataset([dataset, hanging_recovery_dataset_copy, hanging_recovery2_dataset_copy, 
+                                takeoff_dataset, hanging_recovery_dataset, hanging_recovery2_dataset, takeoff_recovery_dataset])
 
     if is_main_process:
         logging.info(colored("Output dir:", "yellow", attrs=["bold"]) + f" {cfg.output_dir}")

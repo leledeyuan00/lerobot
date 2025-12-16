@@ -633,7 +633,7 @@ class ACTEncoderLayer(nn.Module):
         if self.pre_norm:
             x = self.norm1(x)
         q = k = x if pos_embed is None else x + pos_embed
-        x, weights = self.self_attn(q, k, value=x, key_padding_mask=key_padding_mask, average_attn_weights=False)
+        x, weights = self.self_attn(q, k, value=x, key_padding_mask=key_padding_mask, average_attn_weights=True)
         if not self.training:
             self.last_attention_weights = weights.detach().cpu()
         x = skip + self.dropout1(x)
