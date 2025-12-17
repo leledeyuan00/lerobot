@@ -170,7 +170,7 @@
         "optimizer_weight_decay": 0.0001,
         "optimizer_lr_backbone": 1e-05
     },
-    "output_dir": "/home/dayuan/nas/models/factfilmenc_mixed_pwms_50chunk_2dec",
+    "output_dir": "/home/dayuan/nas/models/fact_flatten_mixed_pwms_50chunk_2dec",
     "job_name": "mixed_fact",
     "resume": false,
     "seed": 1000,
