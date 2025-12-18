@@ -26,7 +26,7 @@ ACTION_KEEP_NAMES = [
     "gripper_r",
 ]
 # Load the dataset
-repo_id = "leledeyuan/takeoff-recovery-phase"
+repo_id = "leledeyuan/hanging-recovery-phase"
 dataset = LeRobotDataset(
     repo_id = repo_id,
 )
@@ -36,11 +36,17 @@ print("length of dataset:", len(dataset))
 print("episodes:", dataset.num_episodes)
 
 
-# dataset = SubsetStateActionDataset(dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-# first_data = dataset[0]
+dataset = SubsetStateActionDataset(dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
 # print("first data before phase shift:", first_data["observation.state"])
 
-# dataset = PhaseShiftedDataset(dataset, phase_offset=5, main_task=1)
+dataset = PhaseShiftedDataset(dataset, phase_offset=5)
+i = 100
+test_data = dataset[i]
+print("data items:", test_data.keys())
+print("frame_index:", test_data["frame_index"])
+print("episode_index:", test_data["episode_index"])
+print("index:", test_data["index"])
+print("task_index:", test_data["task_index"])
 
 # first_data = dataset[0]
 # print("first data:", first_data["observation.state"])
