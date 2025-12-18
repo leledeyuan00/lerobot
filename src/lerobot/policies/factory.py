@@ -41,6 +41,7 @@ from lerobot.policies.tdmpc.configuration_tdmpc import TDMPCConfig
 from lerobot.policies.utils import validate_visual_features_consistency
 from lerobot.policies.vqbet.configuration_vqbet import VQBeTConfig
 from lerobot.policies.fact.configuration_fact import FACTConfig
+from lerobot.policies.factphase.configuration_factphase import FACTPhaseConfig
 from lerobot.processor import PolicyAction, PolicyProcessorPipeline
 from lerobot.processor.converters import (
     batch_to_transition,
@@ -112,6 +113,10 @@ def get_policy_class(name: str) -> type[PreTrainedPolicy]:
         from lerobot.policies.fact.modeling_fact import FACTPolicy
 
         return FACTPolicy
+    elif name == "factphase":
+        from lerobot.policies.factphase.modeling_factphase import FACTPhasePolicy
+
+        return FACTPhasePolicy
     else:
         raise NotImplementedError(f"Policy with name {name} is not implemented.")
 
@@ -157,6 +162,8 @@ def make_policy_config(policy_type: str, **kwargs) -> PreTrainedConfig:
         return GrootConfig(**kwargs)
     elif policy_type == "fact":
         return FACTConfig(**kwargs)
+    elif policy_type == "factphase":
+        return FACTPhaseConfig(**kwargs)
     else:
         raise ValueError(f"Policy type '{policy_type}' is not available.")
 
@@ -341,6 +348,13 @@ def make_pre_post_processors(
         from lerobot.policies.fact.processor_fact import make_fact_pre_post_processors
 
         processors = make_fact_pre_post_processors(
+            config=policy_cfg,
+            dataset_stats=kwargs.get("dataset_stats"),
+        )
+    elif isinstance(policy_cfg, FACTPhaseConfig):
+        from lerobot.policies.factphase.processor_factphase import make_factphase_pre_post_processors
+
+        processors = make_factphase_pre_post_processors(
             config=policy_cfg,
             dataset_stats=kwargs.get("dataset_stats"),
         )

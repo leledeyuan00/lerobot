@@ -23,6 +23,7 @@ from .tdmpc.configuration_tdmpc import TDMPCConfig as TDMPCConfig
 from .vqbet.configuration_vqbet import VQBeTConfig as VQBeTConfig
 from .fact.configuration_fact import FACTConfig as FACTConfig
 from .fdp.configuration_fdp import FdpConfig as FdpConfig
+from .factphase.configuration_factphase import FACTPhaseConfig as FACTPhaseConfig
 
 __all__ = [
     "ACTConfig",
@@ -35,4 +36,5 @@ __all__ = [
     "GrootConfig",
     "FACTConfig",
     "FdpConfig",
+    "FACTPhaseConfig",
 ]

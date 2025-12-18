@@ -257,7 +257,7 @@ class FACTTemporalEnsembler:
         return action
 
 
-class FACT(nn.Module):
+class  FACT(nn.Module):
     """Action Chunking Transformer: The underlying neural network for FACTPolicy.
 
     Note: In this code we use the terms `vae_encoder`, 'encoder', `decoder`. The meanings are as follows.

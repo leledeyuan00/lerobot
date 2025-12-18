@@ -26,29 +26,31 @@ ACTION_KEEP_NAMES = [
     "gripper_r",
 ]
 # Load the dataset
-repo_id = "leledeyuan/hanging-tshirt"
+repo_id = "leledeyuan/takeoff-recovery-phase"
 dataset = LeRobotDataset(
     repo_id = repo_id,
 )
 
+print("length of dataset:", len(dataset))
+
 print("episodes:", dataset.num_episodes)
 
 
-dataset = SubsetStateActionDataset(dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-first_data = dataset[0]
-print("first data before phase shift:", first_data["observation.state"])
+# dataset = SubsetStateActionDataset(dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
+# first_data = dataset[0]
+# print("first data before phase shift:", first_data["observation.state"])
 
-dataset = PhaseShiftedDataset(dataset, phase_offset=5, main_task=1)
+# dataset = PhaseShiftedDataset(dataset, phase_offset=5, main_task=1)
 
-first_data = dataset[0]
-print("first data:", first_data["observation.state"])
-print("meta action shape:", dataset.meta.features["action"]["shape"])
-print("meta state  shape:", dataset.meta.features["observation.state"]["shape"])
-if "observation.state" in first_data:
-    print("first data observation.state shape:", first_data["observation.state"].shape)
+# first_data = dataset[0]
+# print("first data:", first_data["observation.state"])
+# print("meta action shape:", dataset.meta.features["action"]["shape"])
+# print("meta state  shape:", dataset.meta.features["observation.state"]["shape"])
+# if "observation.state" in first_data:
+#     print("first data observation.state shape:", first_data["observation.state"].shape)
 
-metadata = dataset.meta
-print("fetures:", metadata.features["observation.state"].items())
+# metadata = dataset.meta
+# print("fetures:", metadata.features["observation.state"].items())
 
 # stats = metadata.stats
 # print("stats:", stats["observation.state"])

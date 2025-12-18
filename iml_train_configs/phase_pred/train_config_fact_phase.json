@@ -1,0 +1,187 @@
+{
+    "dataset": {
+        "repo_id": "leledeyuan/hanging-tshirt",
+        "root": null,
+        "episodes": null,
+        "image_transforms": {
+            "enable": true,
+            "max_num_transforms": 3,
+            "random_order": false,
+            "tfs": {
+                "brightness": {
+                    "weight": 1.0,
+                    "type": "ColorJitter",
+                    "kwargs": {
+                        "brightness": [
+                            0.8,
+                            1.2
+                        ]
+                    }
+                },
+                "contrast": {
+                    "weight": 1.0,
+                    "type": "ColorJitter",
+                    "kwargs": {
+                        "contrast": [
+                            0.8,
+                            1.2
+                        ]
+                    }
+                },
+                "saturation": {
+                    "weight": 1.0,
+                    "type": "ColorJitter",
+                    "kwargs": {
+                        "saturation": [
+                            0.8,
+                            1.2
+                        ]
+                    }
+                },
+                "hue": {
+                    "weight": 1.0,
+                    "type": "ColorJitter",
+                    "kwargs": {
+                        "hue": [
+                            -0.05,
+                            0.05
+                        ]
+                    }
+                },
+                "sharpness": {
+                    "weight": 1.0,
+                    "type": "SharpnessJitter",
+                    "kwargs": {
+                        "sharpness": [
+                            0.5,
+                            1.5
+                        ]
+                    }
+                },
+                "affine": {
+                    "weight": 1.0,
+                    "type": "RandomAffine",
+                    "kwargs": {
+                        "degrees": [
+                            0.0,
+                            0.0
+                        ],
+                        "translate": [
+                            0.0,
+                            0.0
+                        ]
+                    }
+                }
+            }
+        },
+        "revision": null,
+        "use_imagenet_stats": true,
+        "video_backend": "torchcodec",
+        "streaming": false
+    },
+    "env": null,
+    "policy": {
+        "type": "factphase",
+        "n_obs_steps": 1,
+        "input_features": {
+            "observation.state": {
+                "type": "STATE",
+                "shape": [
+                    27
+                ]
+            },
+            "observation.images.front": {
+                "type": "VISUAL",
+                "shape": [
+                    3,
+                    480,
+                    640
+                ]
+            },
+            "observation.images.top": {
+                "type": "VISUAL",
+                "shape": [
+                    3,
+                    480,
+                    640
+                ]
+            },
+            "observation.images.wrist_l": {
+                "type": "VISUAL",
+                "shape": [
+                    3,
+                    480,
+                    640
+                ]
+            },
+            "observation.images.wrist_r": {
+                "type": "VISUAL",
+                "shape": [
+                    3,
+                    480,
+                    640
+                ]
+            }
+        },
+        "output_features": {
+            "action": {
+                "type": "ACTION",
+                "shape": [
+                    16
+                ]
+            }
+        },
+        "class_nums": [16287, 16287, 16287, 16287, 16287, 25687, 25687, 25687, 4204, 2623, 27344],
+        "wrench_dim": 12,
+        "phase_num": 11,
+        "device": "cuda",
+        "use_amp": false,
+        "push_to_hub": true,
+        "repo_id": "mixed_fact",
+        "private": null,
+        "tags": null,
+        "license": null,
+        "pretrained_fact_path": "/home/dayuan/nas/models/fact_flatten_mixed_pwms_50chunk_2dec/checkpoints/500000/pretrained_model",
+        "normalization_mapping": {
+            "VISUAL": "MEAN_STD",
+            "STATE": "MEAN_STD",
+            "ACTION": "MEAN_STD"
+        },
+        "vision_backbone": "resnet18",
+        "pretrained_backbone_weights": "ResNet18_Weights.IMAGENET1K_V1",
+        "dim_model": 512,
+        "feedforward_activation": "relu",
+        "dropout": 0.1,
+        "optimizer_lr": 1e-05,
+        "optimizer_weight_decay": 0.0001,
+        "optimizer_lr_backbone": 1e-05
+    },
+    "output_dir": "/home/dayuan/nas/models/fact_phase",
+    "job_name": "fact_phase",
+    "resume": false,
+    "seed": 1000,
+    "num_workers": 16,
+    "batch_size": 128,
+    "steps": 5000,
+    "eval_freq": 0,
+    "log_freq": 200,
+    "save_checkpoint": true,
+    "save_freq": 1000,
+    "use_policy_training_preset": true,
+    "optimizer": {
+        "type": "adamw",        
+        "lr": 1e-04,
+        "weight_decay": 1e-04,  
+        "grad_clip_norm": 10.0,
+        "betas": [0.9, 0.999],
+        "eps": 1e-08
+    },
+    "scheduler": {
+        "type": "diffuser",      
+        "num_warmup_steps": 500  
+    },
+    "wandb": {
+        "enable": true,
+        "disable_artifact": true
+    }
+}
