@@ -181,7 +181,7 @@ class FACTPhase(nn.Module):
         # MLP projection from concatenated features to Num phases
         hidden_dim = config.dim_model
         self.mlp_proj = nn.Sequential(
-            nn.Linear( hidden_dim* 6, hidden_dim),
+            nn.Linear( hidden_dim* 5, hidden_dim),
             nn.ReLU(),
             nn.Dropout(config.dropout),
             nn.Linear(hidden_dim, config.phase_num)
@@ -222,8 +222,8 @@ class FACTPhase(nn.Module):
         # Prepare mlp inputs.
         mlp_in_tokens = []
         # Robot state token.
-        if self.config.robot_state_feature:
-            mlp_in_tokens.append(self.encoder_robot_state_input_proj(batch_pose))
+        # if self.config.robot_state_feature:
+        #     mlp_in_tokens.append(self.encoder_robot_state_input_proj(batch_pose))
         if self.config.wrench_dim is not None:
             mlp_in_tokens.append(self.encoder_robot_wrench_input_proj(batch_wrench))
 
