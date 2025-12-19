@@ -131,7 +131,7 @@
                 ]
             }
         },
-        "class_nums": [16287, 16287, 16287, 16287, 16287, 25687, 25687, 25687, 4204, 2623, 27344],
+        "class_nums": [16287, 16287, 16287, 16287, 16287, 25687, 25687, 25687, 4204, 10000, 27344],
         "wrench_dim": 12,
         "phase_num": 11,
         "device": "cuda",
@@ -152,34 +152,29 @@
         "dim_model": 512,
         "feedforward_activation": "relu",
         "dropout": 0.1,
-        "optimizer_lr": 1e-05,
-        "optimizer_weight_decay": 0.0001,
-        "optimizer_lr_backbone": 1e-05
+        "optimizer_lr": 1e-04,
+        "optimizer_weight_decay": 1e-06,
+        "optimizer_lr_backbone": 1e-05,
+        "optimizer_eps": 1e-08,
+        "optimizer_betas": [
+            0.95,
+            0.999
+        ],
+        "scheduler_name": "cosine",
+        "scheduler_warmup_steps": 500
     },
-    "output_dir": "/home/dayuan/nas/models/fact_phase",
+    "output_dir": "/home/dayuan/nas/models/fact_phase_expand_lr",
     "job_name": "fact_phase",
     "resume": false,
     "seed": 1000,
     "num_workers": 16,
     "batch_size": 128,
-    "steps": 5000,
+    "steps": 20000,
     "eval_freq": 0,
     "log_freq": 200,
     "save_checkpoint": true,
     "save_freq": 1000,
     "use_policy_training_preset": true,
-    "optimizer": {
-        "type": "adamw",        
-        "lr": 1e-04,
-        "weight_decay": 1e-04,  
-        "grad_clip_norm": 10.0,
-        "betas": [0.9, 0.999],
-        "eps": 1e-08
-    },
-    "scheduler": {
-        "type": "diffuser",      
-        "num_warmup_steps": 500  
-    },
     "wandb": {
         "enable": true,
         "disable_artifact": true

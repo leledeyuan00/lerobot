@@ -52,7 +52,7 @@ from lerobot.utils.utils import (
 )
 
 from subset_dataset import SubsetStateActionDataset
-from phase_shift_dataset import PhaseShiftedDataset, MultiTaskDataset, PhaseSetDataset
+from phase_shift_dataset import PhaseShiftedDataset, MultiTaskDataset, PhaseSetDataset, PhaseSetDatasetCond
 from copy import deepcopy
 
 STATE_KEEP_NAMES = [
@@ -298,6 +298,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     hanging_recovery_dataset = make_dataset(hanging_recovery_cfg)
     hanging_recovery_dataset = SubsetStateActionDataset(hanging_recovery_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
     hanging_recovery_dataset = PhaseShiftedDataset(hanging_recovery_dataset, phase_offset=8)
+    hanging_recovery_dataset = PhaseSetDatasetCond(hanging_recovery_dataset, phase_set=1, index_cond=120)
 
     hanging_recovery2_repo_id = "leledeyuan/hanging-recovery2-phase"
     hanging_recovery2_cfg = deepcopy(cfg)
@@ -305,6 +306,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     hanging_recovery2_dataset = make_dataset(hanging_recovery2_cfg)
     hanging_recovery2_dataset = SubsetStateActionDataset(hanging_recovery2_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
     hanging_recovery2_dataset = PhaseShiftedDataset(hanging_recovery2_dataset, phase_offset=9)
+    hanging_recovery2_dataset = PhaseSetDatasetCond(hanging_recovery2_dataset, phase_set=0, index_cond=20)
 
     takeoff_recovery_repo_id = "leledeyuan/takeoff-recovery-phase"
     takeoff_recovery_cfg = deepcopy(cfg)
@@ -313,7 +315,24 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     takeoff_recovery_dataset = SubsetStateActionDataset(takeoff_recovery_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
     takeoff_recovery_dataset = PhaseShiftedDataset(takeoff_recovery_dataset, phase_offset=10)
 
-    dataset = MultiTaskDataset([dataset, takeoff_dataset, hanging_recovery_dataset, hanging_recovery2_dataset, takeoff_recovery_dataset])
+    # Phase1 expand
+    hanging_phase1_pred_repo_id = "leledeyuan/hanging-phase1-pred"
+    hanging_phase1_pred_cfg = deepcopy(cfg)
+    hanging_phase1_pred_cfg.dataset.repo_id = hanging_phase1_pred_repo_id
+    hanging_phase1_pred_dataset = make_dataset(hanging_phase1_pred_cfg)
+    hanging_phase1_pred_dataset = SubsetStateActionDataset(hanging_phase1_pred_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
+    hanging_phase1_pred_dataset = PhaseSetDataset(hanging_phase1_pred_dataset, phase_set=1)
+
+    # hanging phase8 expand
+    hanging_phase9_pred_repo_id = "leledeyuan/hanging-recovery2-phase-pred"
+    hanging_phase9_pred_cfg = deepcopy(cfg)
+    hanging_phase9_pred_cfg.dataset.repo_id = hanging_phase9_pred_repo_id
+    hanging_phase9_pred_dataset = make_dataset(hanging_phase9_pred_cfg)
+    hanging_phase9_pred_dataset = SubsetStateActionDataset(hanging_phase9_pred_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
+    hanging_phase9_pred_dataset = PhaseSetDataset(hanging_phase9_pred_dataset, phase_set=9)
+
+
+    dataset = MultiTaskDataset([dataset, takeoff_dataset, hanging_recovery_dataset, hanging_recovery2_dataset, takeoff_recovery_dataset, hanging_phase1_pred_dataset, hanging_phase9_pred_dataset])
 
     if is_main_process:
         logging.info(colored("Output dir:", "yellow", attrs=["bold"]) + f" {cfg.output_dir}")

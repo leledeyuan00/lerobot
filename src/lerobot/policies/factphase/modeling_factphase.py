@@ -65,26 +65,28 @@ class FACTPhasePolicy(PreTrainedPolicy):
 
         self.reset()
 
+    # def get_optim_params(self) -> dict:
+    #     # TODO(aliberts, rcadene): As of now, lr_backbone == lr
+    #     # Should we remove this and just `return self.parameters()`?
+    #     return [
+    #         {
+    #             "params": [
+    #                 p
+    #                 for n, p in self.named_parameters()
+    #                 if not n.startswith("model.backbone") and p.requires_grad
+    #             ]
+    #         },
+    #         {
+    #             "params": [
+    #                 p
+    #                 for n, p in self.named_parameters()
+    #                 if n.startswith("model.backbone") and p.requires_grad
+    #             ],
+    #             "lr": self.config.optimizer_lr_backbone,
+    #         },
+    #     ]
     def get_optim_params(self) -> dict:
-        # TODO(aliberts, rcadene): As of now, lr_backbone == lr
-        # Should we remove this and just `return self.parameters()`?
-        return [
-            {
-                "params": [
-                    p
-                    for n, p in self.named_parameters()
-                    if not n.startswith("model.backbone") and p.requires_grad
-                ]
-            },
-            {
-                "params": [
-                    p
-                    for n, p in self.named_parameters()
-                    if n.startswith("model.backbone") and p.requires_grad
-                ],
-                "lr": self.config.optimizer_lr_backbone,
-            },
-        ]
+        return self.model.parameters()
 
     @torch.no_grad()
     def predict_phase(self, batch: dict[str, Tensor]) -> Tensor:
