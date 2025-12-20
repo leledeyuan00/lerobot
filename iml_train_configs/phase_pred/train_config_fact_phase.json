@@ -131,7 +131,7 @@
                 ]
             }
         },
-        "class_nums": [16287, 16287, 16287, 16287, 16287, 25687, 25687, 25687, 4204, 10000, 27344],
+        "class_nums": [16287, 13287, 16287, 16287, 16287, 25687, 25687, 25687, 4204, 13000, 27344],
         "wrench_dim": 12,
         "phase_num": 11,
         "device": "cuda",
@@ -141,7 +141,7 @@
         "private": null,
         "tags": null,
         "license": null,
-        "pretrained_fact_path": "/home/dayuan/nas/models/fact_flatten_mixed_pwms_50chunk_2dec/checkpoints/500000/pretrained_model",
+        "pretrained_fact_path": "/home/dayuan/nas/models/fact_flatten_mixed_pwms_50chunk_2dec/checkpoints/400000/pretrained_model",
         "normalization_mapping": {
             "VISUAL": "MEAN_STD",
             "STATE": "MEAN_STD",
@@ -163,7 +163,7 @@
         "scheduler_name": "cosine",
         "scheduler_warmup_steps": 500
     },
-    "output_dir": "/home/dayuan/nas/models/fact_phase_expand_lr",
+    "output_dir": "/home/dayuan/nas/models/fact_phase_expand3_lr",
     "job_name": "fact_phase",
     "resume": false,
     "seed": 1000,
@@ -171,7 +171,7 @@
     "batch_size": 128,
     "steps": 20000,
     "eval_freq": 0,
-    "log_freq": 200,
+    "log_freq": 100,
     "save_checkpoint": true,
     "save_freq": 1000,
     "use_policy_training_preset": true,
