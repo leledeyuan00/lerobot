@@ -313,7 +313,28 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     takeoff_recovery_dataset = SubsetStateActionDataset(takeoff_recovery_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
     takeoff_recovery_dataset = PhaseShiftedDataset(takeoff_recovery_dataset, phase_offset=10)
 
-    dataset = MultiTaskDataset([dataset, takeoff_dataset, hanging_recovery_dataset, hanging_recovery2_dataset, takeoff_recovery_dataset])
+    hanging_phase0_exp_repo_id = "leledeyuan/hanging-phase0-expand"
+    hanging_phase0_exp_cfg = deepcopy(cfg)
+    hanging_phase0_exp_cfg.dataset.repo_id = hanging_phase0_exp_repo_id
+    hanging_phase0_exp_dataset = make_dataset(hanging_phase0_exp_cfg)
+    hanging_phase0_exp_dataset = SubsetStateActionDataset(hanging_phase0_exp_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
+    hanging_phase0_exp_dataset = PhaseSetDataset(hanging_phase0_exp_dataset, phase_set=0)
+
+    hanging_phase0_exp2_repo_id = "leledeyuan/inject-phase"
+    hanging_phase0_exp2_cfg = deepcopy(cfg)
+    hanging_phase0_exp2_cfg.dataset.repo_id = hanging_phase0_exp2_repo_id
+    hanging_phase0_exp2_dataset = make_dataset(hanging_phase0_exp2_cfg)
+    hanging_phase0_exp2_dataset = SubsetStateActionDataset(hanging_phase0_exp2_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
+    hanging_phase0_exp2_dataset = PhaseSetDataset(hanging_phase0_exp2_dataset, phase_set=0)
+
+    takeoff_recovery_exp_repo_id = "leledeyuan/hanging-phase10-expand"
+    takeoff_recovery_exp_cfg = deepcopy(cfg)
+    takeoff_recovery_exp_cfg.dataset.repo_id = takeoff_recovery_exp_repo_id
+    takeoff_recovery_exp_dataset = make_dataset(takeoff_recovery_exp_cfg)
+    takeoff_recovery_exp_dataset = SubsetStateActionDataset(takeoff_recovery_exp_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
+    takeoff_recovery_exp_dataset = PhaseSetDataset(takeoff_recovery_exp_dataset, phase_set=10)
+
+    dataset = MultiTaskDataset([dataset, takeoff_dataset, hanging_recovery_dataset, hanging_recovery2_dataset, takeoff_recovery_dataset, hanging_phase0_exp_dataset, hanging_phase0_exp2_dataset, takeoff_recovery_exp_dataset])
 
     if is_main_process:
         logging.info(colored("Output dir:", "yellow", attrs=["bold"]) + f" {cfg.output_dir}")
