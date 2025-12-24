@@ -298,7 +298,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     hanging_recovery_dataset = make_dataset(hanging_recovery_cfg)
     hanging_recovery_dataset = SubsetStateActionDataset(hanging_recovery_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
     hanging_recovery_dataset = PhaseShiftedDataset(hanging_recovery_dataset, phase_offset=8)
-    hanging_recovery_dataset = PhaseSetDatasetCond(hanging_recovery_dataset, phase_set=1, index_cond=120)
+    hanging_recovery_dataset = PhaseSetDatasetCond(hanging_recovery_dataset, phase_set=1, index_cond=60)
 
     hanging_recovery2_repo_id = "leledeyuan/hanging-recovery2-phase"
     hanging_recovery2_cfg = deepcopy(cfg)
@@ -323,7 +323,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     hanging_phase1_pred_dataset = SubsetStateActionDataset(hanging_phase1_pred_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
     hanging_phase1_pred_dataset = PhaseSetDataset(hanging_phase1_pred_dataset, phase_set=1)
 
-    # hanging phase8 expand
+    # hanging phase9 expand
     hanging_phase9_pred_repo_id = "leledeyuan/hanging-recovery2-phase-pred"
     hanging_phase9_pred_cfg = deepcopy(cfg)
     hanging_phase9_pred_cfg.dataset.repo_id = hanging_phase9_pred_repo_id

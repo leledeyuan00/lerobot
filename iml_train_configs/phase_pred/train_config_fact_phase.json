@@ -131,7 +131,7 @@
                 ]
             }
         },
-        "class_nums": [16287, 13287, 16287, 16287, 16287, 25687, 25687, 25687, 4204, 13000, 27344],
+        "class_nums": [16287, 13287, 16287, 16287, 16287, 25687, 25687, 25687, 600, 13000, 27344],
         "wrench_dim": 12,
         "phase_num": 11,
         "device": "cuda",
@@ -163,7 +163,7 @@
         "scheduler_name": "cosine",
         "scheduler_warmup_steps": 500
     },
-    "output_dir": "/home/dayuan/nas/models/fact_phase_expand3_lr",
+    "output_dir": "/home/dayuan/nas/models/fact_phase_expand4_lr",
     "job_name": "fact_phase",
     "resume": false,
     "seed": 1000,
