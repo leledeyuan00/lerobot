@@ -284,20 +284,23 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     num_learnable_params = sum(p.numel() for p in policy.parameters() if p.requires_grad)
     num_total_params = sum(p.numel() for p in policy.parameters())
 
+    # set maintask to dataset
+    dataset = PhaseShiftedDataset(dataset, phase_offset=0, main_task=0)
+
     # Load second dataset for concatenation
     takeoff_repo_id = "leledeyuan/takeoff-tshirt"
     takeoff_cfg = deepcopy(cfg)
     takeoff_cfg.dataset.repo_id = takeoff_repo_id
     takeoff_dataset = make_dataset(takeoff_cfg)
     takeoff_dataset = SubsetStateActionDataset(takeoff_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    takeoff_dataset = PhaseShiftedDataset(takeoff_dataset, phase_offset=5)
+    takeoff_dataset = PhaseShiftedDataset(takeoff_dataset, phase_offset=5, main_task=1)
     
     hanging_recovery_repo_id = "leledeyuan/hanging-recovery-phase"
     hanging_recovery_cfg = deepcopy(cfg)
     hanging_recovery_cfg.dataset.repo_id = hanging_recovery_repo_id
     hanging_recovery_dataset = make_dataset(hanging_recovery_cfg)
     hanging_recovery_dataset = SubsetStateActionDataset(hanging_recovery_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    hanging_recovery_dataset = PhaseShiftedDataset(hanging_recovery_dataset, phase_offset=8)
+    hanging_recovery_dataset = PhaseShiftedDataset(hanging_recovery_dataset, phase_offset=8, main_task=0)
     hanging_recovery_dataset = PhaseSetDatasetCond(hanging_recovery_dataset, phase_set=1, index_cond=60)
 
     hanging_recovery2_repo_id = "leledeyuan/hanging-recovery2-phase"
@@ -305,7 +308,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     hanging_recovery2_cfg.dataset.repo_id = hanging_recovery2_repo_id
     hanging_recovery2_dataset = make_dataset(hanging_recovery2_cfg)
     hanging_recovery2_dataset = SubsetStateActionDataset(hanging_recovery2_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    hanging_recovery2_dataset = PhaseShiftedDataset(hanging_recovery2_dataset, phase_offset=9)
+    hanging_recovery2_dataset = PhaseShiftedDataset(hanging_recovery2_dataset, phase_offset=9, main_task=0)
     hanging_recovery2_dataset = PhaseSetDatasetCond(hanging_recovery2_dataset, phase_set=0, index_cond=20)
 
     takeoff_recovery_repo_id = "leledeyuan/takeoff-recovery-phase"
@@ -313,7 +316,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     takeoff_recovery_cfg.dataset.repo_id = takeoff_recovery_repo_id
     takeoff_recovery_dataset = make_dataset(takeoff_recovery_cfg)
     takeoff_recovery_dataset = SubsetStateActionDataset(takeoff_recovery_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    takeoff_recovery_dataset = PhaseShiftedDataset(takeoff_recovery_dataset, phase_offset=10)
+    takeoff_recovery_dataset = PhaseShiftedDataset(takeoff_recovery_dataset, phase_offset=10, main_task=1)
 
     # Phase1 expand
     hanging_phase1_pred_repo_id = "leledeyuan/hanging-phase1-pred"
@@ -321,7 +324,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     hanging_phase1_pred_cfg.dataset.repo_id = hanging_phase1_pred_repo_id
     hanging_phase1_pred_dataset = make_dataset(hanging_phase1_pred_cfg)
     hanging_phase1_pred_dataset = SubsetStateActionDataset(hanging_phase1_pred_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    hanging_phase1_pred_dataset = PhaseSetDataset(hanging_phase1_pred_dataset, phase_set=1)
+    hanging_phase1_pred_dataset = PhaseSetDataset(hanging_phase1_pred_dataset, phase_set=1, main_task=0)
 
     # hanging phase9 expand
     hanging_phase9_pred_repo_id = "leledeyuan/hanging-recovery2-phase-pred"
@@ -329,8 +332,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     hanging_phase9_pred_cfg.dataset.repo_id = hanging_phase9_pred_repo_id
     hanging_phase9_pred_dataset = make_dataset(hanging_phase9_pred_cfg)
     hanging_phase9_pred_dataset = SubsetStateActionDataset(hanging_phase9_pred_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
-    hanging_phase9_pred_dataset = PhaseSetDataset(hanging_phase9_pred_dataset, phase_set=9)
-
+    hanging_phase9_pred_dataset = PhaseSetDataset(hanging_phase9_pred_dataset, phase_set=9, main_task=0)
 
     dataset = MultiTaskDataset([dataset, takeoff_dataset, hanging_recovery_dataset, hanging_recovery2_dataset, takeoff_recovery_dataset, hanging_phase1_pred_dataset, hanging_phase9_pred_dataset])
 

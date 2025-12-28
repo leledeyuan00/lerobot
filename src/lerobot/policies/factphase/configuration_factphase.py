@@ -82,7 +82,8 @@ class FACTPhaseConfig(PreTrainedConfig):
     wrench_dim: None | int = None
     # Phase
     phase_num: None | int = None
-
+    # main_task
+    main_task_num: None | int = None
 
     # Training and loss computation.
     dropout: float = 0.1

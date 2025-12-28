@@ -40,7 +40,6 @@ class PhaseProcessorStep(ProcessorStep):
         phase_num: The dimension of phase in the state.
     """
     phase_num: None | int = None
-    use_main_task: None | bool = None
 
     def __call__(self, transition: EnvTransition) -> EnvTransition:
         """
@@ -63,10 +62,6 @@ class PhaseProcessorStep(ProcessorStep):
         state = obs[OBS_STATE]
         phase = state[..., -1] # assuming phase is the last dimension
         obs["phase"] = phase        #  Batch, 1
-        if self.use_main_task is not None:
-            main_task = state[..., -2] # assuming main_task is the second last dimension
-            # new_transition[OBS_STATE] = state      # keep the original state
-            obs["main_task"] = main_task    #  Batch, 1
         new_transition[TransitionKey.OBSERVATION] = obs
 
         return new_transition
@@ -88,5 +83,4 @@ class PhaseProcessorStep(ProcessorStep):
         """
         return {
             "phase_num": self.phase_num,
-            "use_main_task": self.use_main_task,
         }

@@ -65,26 +65,6 @@ class FACTPhasePolicy(PreTrainedPolicy):
 
         self.reset()
 
-    # def get_optim_params(self) -> dict:
-    #     # TODO(aliberts, rcadene): As of now, lr_backbone == lr
-    #     # Should we remove this and just `return self.parameters()`?
-    #     return [
-    #         {
-    #             "params": [
-    #                 p
-    #                 for n, p in self.named_parameters()
-    #                 if not n.startswith("model.backbone") and p.requires_grad
-    #             ]
-    #         },
-    #         {
-    #             "params": [
-    #                 p
-    #                 for n, p in self.named_parameters()
-    #                 if n.startswith("model.backbone") and p.requires_grad
-    #             ],
-    #             "lr": self.config.optimizer_lr_backbone,
-    #         },
-    #     ]
     def get_optim_params(self) -> dict:
         return self.model.parameters()
 
@@ -168,8 +148,15 @@ class FACTPhase(nn.Module):
         self.conv1 = fact_model.encoder_img_feat_input_proj
         self.glb_ave_pool = nn.AdaptiveAvgPool2d((1,1))
 
+        self.token_nums = 6
+        
         self.encoder_robot_wrench_input_proj = fact_model.encoder_robot_wrench_input_proj
         self.encoder_robot_state_input_proj = fact_model.encoder_robot_state_input_proj
+        if self.config.main_task_num is not None:
+            self.encoder_main_task_input_proj = nn.Embedding(
+                self.config.main_task_num, config.dim_model
+            )
+            self.token_nums +=1
         # frozen params from pretrained FACT
         for param in self.backbone.parameters():
             param.requires_grad = False
@@ -183,7 +170,7 @@ class FACTPhase(nn.Module):
         # MLP projection from concatenated features to Num phases
         hidden_dim = config.dim_model
         self.mlp_proj = nn.Sequential(
-            nn.Linear( hidden_dim* 6, hidden_dim),
+            nn.Linear( hidden_dim* self.token_nums, hidden_dim),
             nn.ReLU(),
             nn.Dropout(config.dropout),
             nn.Linear(hidden_dim, config.phase_num)
@@ -228,6 +215,10 @@ class FACTPhase(nn.Module):
             mlp_in_tokens.append(self.encoder_robot_state_input_proj(batch_pose))
         if self.config.wrench_dim is not None:
             mlp_in_tokens.append(self.encoder_robot_wrench_input_proj(batch_wrench))
+        if self.config.main_task_num is not None:
+            batch_main_task = batch["observation.main_task"]  # (B, 1)
+            batch_main_task = batch_main_task.flatten().long()
+            mlp_in_tokens.append(self.encoder_main_task_input_proj(batch_main_task))
 
         if self.config.image_features:
             # For a list of images, the H and W may vary but H*W is constant.
