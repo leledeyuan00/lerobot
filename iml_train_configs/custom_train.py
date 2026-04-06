@@ -284,6 +284,9 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     num_learnable_params = sum(p.numel() for p in policy.parameters() if p.requires_grad)
     num_total_params = sum(p.numel() for p in policy.parameters())
 
+    # set maintask to dataset
+    datasets = [dataset]
+
     # Load second dataset for concatenation
     takeoff_repo_id = "leledeyuan/takeoff-tshirt"
     takeoff_cfg = deepcopy(cfg)
@@ -291,6 +294,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     takeoff_dataset = make_dataset(takeoff_cfg)
     takeoff_dataset = SubsetStateActionDataset(takeoff_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
     takeoff_dataset = PhaseShiftedDataset(takeoff_dataset, phase_offset=5)
+    # datasets.append(takeoff_dataset)
     
     hanging_recovery_repo_id = "leledeyuan/hanging-recovery-phase"
     hanging_recovery_cfg = deepcopy(cfg)
@@ -298,6 +302,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     hanging_recovery_dataset = make_dataset(hanging_recovery_cfg)
     hanging_recovery_dataset = SubsetStateActionDataset(hanging_recovery_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
     hanging_recovery_dataset = PhaseShiftedDataset(hanging_recovery_dataset, phase_offset=8)
+    # datasets.append(hanging_recovery_dataset)
 
     hanging_recovery2_repo_id = "leledeyuan/hanging-recovery2-phase"
     hanging_recovery2_cfg = deepcopy(cfg)
@@ -305,6 +310,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     hanging_recovery2_dataset = make_dataset(hanging_recovery2_cfg)
     hanging_recovery2_dataset = SubsetStateActionDataset(hanging_recovery2_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
     hanging_recovery2_dataset = PhaseShiftedDataset(hanging_recovery2_dataset, phase_offset=9)
+    # datasets.append(hanging_recovery2_dataset)
 
     takeoff_recovery_repo_id = "leledeyuan/takeoff-recovery-phase"
     takeoff_recovery_cfg = deepcopy(cfg)
@@ -312,6 +318,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     takeoff_recovery_dataset = make_dataset(takeoff_recovery_cfg)
     takeoff_recovery_dataset = SubsetStateActionDataset(takeoff_recovery_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
     takeoff_recovery_dataset = PhaseShiftedDataset(takeoff_recovery_dataset, phase_offset=10)
+    # datasets.append(takeoff_recovery_dataset)
 
     hanging_phase0_exp_repo_id = "leledeyuan/hanging-phase0-expand"
     hanging_phase0_exp_cfg = deepcopy(cfg)
@@ -319,6 +326,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     hanging_phase0_exp_dataset = make_dataset(hanging_phase0_exp_cfg)
     hanging_phase0_exp_dataset = SubsetStateActionDataset(hanging_phase0_exp_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
     hanging_phase0_exp_dataset = PhaseSetDataset(hanging_phase0_exp_dataset, phase_set=0)
+    datasets.append(hanging_phase0_exp_dataset)
 
     hanging_phase0_exp2_repo_id = "leledeyuan/inject-phase"
     hanging_phase0_exp2_cfg = deepcopy(cfg)
@@ -326,6 +334,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     hanging_phase0_exp2_dataset = make_dataset(hanging_phase0_exp2_cfg)
     hanging_phase0_exp2_dataset = SubsetStateActionDataset(hanging_phase0_exp2_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
     hanging_phase0_exp2_dataset = PhaseSetDataset(hanging_phase0_exp2_dataset, phase_set=0)
+    datasets.append(hanging_phase0_exp2_dataset)
 
     takeoff_recovery_exp_repo_id = "leledeyuan/hanging-phase10-expand"
     takeoff_recovery_exp_cfg = deepcopy(cfg)
@@ -333,8 +342,9 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     takeoff_recovery_exp_dataset = make_dataset(takeoff_recovery_exp_cfg)
     takeoff_recovery_exp_dataset = SubsetStateActionDataset(takeoff_recovery_exp_dataset, STATE_KEEP_NAMES, ACTION_KEEP_NAMES)
     takeoff_recovery_exp_dataset = PhaseSetDataset(takeoff_recovery_exp_dataset, phase_set=10)
+    # datasets.append(takeoff_recovery_exp_dataset)
 
-    dataset = MultiTaskDataset([dataset, takeoff_dataset, hanging_recovery_dataset, hanging_recovery2_dataset, takeoff_recovery_dataset, hanging_phase0_exp_dataset, hanging_phase0_exp2_dataset, takeoff_recovery_exp_dataset])
+    dataset = MultiTaskDataset(datasets)
 
     if is_main_process:
         logging.info(colored("Output dir:", "yellow", attrs=["bold"]) + f" {cfg.output_dir}")

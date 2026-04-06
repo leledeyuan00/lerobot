@@ -123,6 +123,8 @@ class FACTConfig(PreTrainedConfig):
     use_vae: bool = True
     latent_dim: int = 32
     n_vae_encoder_layers: int = 4
+    # FiLM
+    use_film: bool = True
     # selected state and action dimensions
     selected_state_shape: None | list[int] = None
     selected_action_shape: None | list[int] = None

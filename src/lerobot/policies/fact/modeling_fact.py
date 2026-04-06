@@ -559,7 +559,7 @@ class  FACT(nn.Module):
 
         # Forward pass through the transformer modules.
         encoder_out = self.encoder(encoder_in_tokens,
-                                    cond= encoder_phase_embed if self.config.phase_num is not None else None,
+                                    cond= encoder_phase_embed if self.config.use_film else None,
                                     pos_embed=encoder_in_pos_embed)
         # TODO(rcadene, alexander-soare): remove call to `device` ; precompute and use buffer
         decoder_in = torch.zeros(
