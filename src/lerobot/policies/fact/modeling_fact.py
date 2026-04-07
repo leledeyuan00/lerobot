@@ -63,7 +63,7 @@ class FACTPolicy(PreTrainedPolicy):
         self.model = FACT(config)
 
         if config.temporal_ensemble_coeff is not None:
-            self.temporal_ensembler = FACTTemporalEnsembler(config.temporal_ensemble_coeff, config.chunk_size)
+            self.temporal_ensembler = FACTTemporalEnsembler(config.temporal_ensemble_coeff, config.chunk_size, config.chunk_stride)
 
         self.reset()
 
@@ -167,7 +167,7 @@ class FACTPolicy(PreTrainedPolicy):
 
 
 class FACTTemporalEnsembler:
-    def __init__(self, temporal_ensemble_coeff: float, chunk_size: int) -> None:
+    def __init__(self, temporal_ensemble_coeff: float, chunk_size: int, chunk_stride: int) -> None:
         """Temporal ensembling as described in Algorithm 2 of https://huggingface.co/papers/2304.13705.
 
         The weights are calculated as wᵢ = exp(-temporal_ensemble_coeff * i) where w₀ is the oldest action.
@@ -209,7 +209,8 @@ class FACTTemporalEnsembler:
         print("online", avg)
         ```
         """
-        self.chunk_size = chunk_size
+        self.chunk_stride = chunk_stride # which action in the sequence of actions predicted at the first time step of the episode is being consumed next (0-indexed)
+        self.chunk_size = chunk_size // self.chunk_stride
         self.ensemble_weights = torch.exp(-temporal_ensemble_coeff * torch.arange(chunk_size))
         self.ensemble_weights_cumsum = torch.cumsum(self.ensemble_weights, dim=0)
         self.reset()
@@ -227,10 +228,15 @@ class FACTTemporalEnsembler:
         """
         self.ensemble_weights = self.ensemble_weights.to(device=actions.device)
         self.ensemble_weights_cumsum = self.ensemble_weights_cumsum.to(device=actions.device)
+
+        offset = self.chunk_stride - 1
+        end_idx = self.chunk_size * self.chunk_stride
+        sub_actions = actions[:, offset: end_idx : self.chunk_stride]
+
         if self.ensembled_actions is None:
             # Initializes `self._ensembled_action` to the sequence of actions predicted during the first
             # time step of the episode.
-            self.ensembled_actions = actions.clone()
+            self.ensembled_actions = sub_actions.clone()
             # Note: The last dimension is unsqueeze to make sure we can broadcast properly for tensor
             # operations later.
             self.ensembled_actions_count = torch.ones(
@@ -240,11 +246,11 @@ class FACTTemporalEnsembler:
             # self.ensembled_actions will have shape (batch_size, chunk_size - 1, action_dim). Compute
             # the online update for those entries.
             self.ensembled_actions *= self.ensemble_weights_cumsum[self.ensembled_actions_count - 1]
-            self.ensembled_actions += actions[:, :-1] * self.ensemble_weights[self.ensembled_actions_count]
+            self.ensembled_actions += sub_actions[:, :-1] * self.ensemble_weights[self.ensembled_actions_count]
             self.ensembled_actions /= self.ensemble_weights_cumsum[self.ensembled_actions_count]
             self.ensembled_actions_count = torch.clamp(self.ensembled_actions_count + 1, max=self.chunk_size)
             # The last action, which has no prior online average, needs to get concatenated onto the end.
-            self.ensembled_actions = torch.cat([self.ensembled_actions, actions[:, -1:]], dim=1)
+            self.ensembled_actions = torch.cat([self.ensembled_actions, sub_actions[:, -1:]], dim=1)
             self.ensembled_actions_count = torch.cat(
                 [self.ensembled_actions_count, torch.ones_like(self.ensembled_actions_count[-1:])]
             )

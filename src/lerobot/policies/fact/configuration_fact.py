@@ -125,6 +125,8 @@ class FACTConfig(PreTrainedConfig):
     n_vae_encoder_layers: int = 4
     # FiLM
     use_film: bool = True
+    # selected consumed_action_num for velocity ablation
+    chunk_stride: int = 1
     # selected state and action dimensions
     selected_state_shape: None | list[int] = None
     selected_action_shape: None | list[int] = None
