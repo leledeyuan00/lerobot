@@ -52,7 +52,7 @@ from lerobot.utils.utils import (
 )
 
 from subset_dataset import SubsetStateActionDataset
-from phase_shift_dataset import PhaseShiftedDataset, MultiTaskDataset, PhaseSetDataset
+from phase_shift_dataset import PhaseShiftedDataset, MultiTaskDataset, PhaseSetDataset, PhaseSetDatasetCond
 from copy import deepcopy
 
 STATE_KEEP_NAMES = [

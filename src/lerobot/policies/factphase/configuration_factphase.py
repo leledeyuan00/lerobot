@@ -17,7 +17,9 @@ from dataclasses import dataclass, field
 
 from lerobot.configs.policies import PreTrainedConfig
 from lerobot.configs.types import NormalizationMode
-from lerobot.optim.optimizers import AdamWConfig
+from lerobot.optim.optimizers import AdamConfig
+from lerobot.optim.schedulers import DiffuserSchedulerConfig
+
 
 
 @PreTrainedConfig.register_subclass("factphase")
@@ -80,7 +82,8 @@ class FACTPhaseConfig(PreTrainedConfig):
     wrench_dim: None | int = None
     # Phase
     phase_num: None | int = None
-
+    # main_task
+    main_task_num: None | int = None
 
     # Training and loss computation.
     dropout: float = 0.1
@@ -89,6 +92,11 @@ class FACTPhaseConfig(PreTrainedConfig):
     optimizer_lr: float = 1e-5
     optimizer_weight_decay: float = 1e-4
     optimizer_lr_backbone: float = 1e-5
+    optimizer_betas: tuple[float, float] = (0.9, 0.999)
+    optimizer_eps: float = 1e-8
+
+    scheduler_name: str = "diffuser"
+    scheduler_warmup_steps: int = 0
 
     def __post_init__(self):
         super().__post_init__()
@@ -99,14 +107,19 @@ class FACTPhaseConfig(PreTrainedConfig):
                 f"`vision_backbone` must be one of the ResNet variants. Got {self.vision_backbone}."
             )
 
-    def get_optimizer_preset(self) -> AdamWConfig:
-        return AdamWConfig(
+    def get_optimizer_preset(self) -> AdamConfig:
+        return AdamConfig(
             lr=self.optimizer_lr,
+            betas=self.optimizer_betas,
+            eps=self.optimizer_eps,
             weight_decay=self.optimizer_weight_decay,
         )
 
-    def get_scheduler_preset(self) -> None:
-        return None
+    def get_scheduler_preset(self) -> DiffuserSchedulerConfig:
+        return DiffuserSchedulerConfig(
+            name=self.scheduler_name,
+            num_warmup_steps=self.scheduler_warmup_steps,
+        )
 
     def validate_features(self) -> None:
         if not self.image_features and not self.env_state_feature:

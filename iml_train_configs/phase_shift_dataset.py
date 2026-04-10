@@ -25,9 +25,8 @@ class PhaseShiftedDataset(Dataset):
             # Here we assume the last element of the state vector is the phase
             state[-1] = state[-1] + self.phase_offset
             if self.main_task is not None:
-                # Extend on -2 dimension to include main_task
                 main_task = torch.tensor([self.main_task], dtype=state.dtype)
-                state = torch.cat([state[:-2], main_task, state[-1:]])
+                item['observation.main_task'] = main_task
 
             item['observation.state'] = state
             
@@ -60,9 +59,41 @@ class PhaseSetDataset(Dataset):
             # Here we assume the last element of the state vector is the phase
             state[-1] = self.phase_set
             if self.main_task is not None:
-                # Extend on -2 dimension to include main_task
-                # main_task = torch.tensor([self.main_task], dtype=state.dtype)
-                state = torch.cat([state[:-1], torch.tensor([self.main_task]), state[-1:]])
+                main_task = torch.tensor([self.main_task], dtype=state.dtype)
+                item['observation.main_task'] = main_task
+            item['observation.state'] = state
+            
+        return item
+    def __getattr__(self, name):
+        # 关键：如果在当前类找不到属性（比如 num_frames, stats），
+        # 就去原始 dataset 里找
+        return getattr(self.dataset, name)
+    
+class PhaseSetDatasetCond(Dataset):
+    def __init__(self, dataset, phase_set, index_cond=None):
+        self.dataset = dataset
+        self.phase_set = phase_set
+        self.index_cond = index_cond
+        # Inherit meta from the original dataset
+        # Inherit stats if available
+        self.meta = copy.deepcopy(self.dataset.meta)
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, idx):
+        # 1. Fetch the original item
+        item = self.dataset[idx]
+
+        # 2. Dynamically modify the phase in the observation.state
+        if 'observation.state' in item:
+            # Assuming 'phase' is stored in a specific index of the state vector
+            state = item['observation.state']
+            # Here we assume the last element of the state vector is the phase
+            if self.index_cond is not None:
+                if item['index'] > self.index_cond:
+                    state[-1] = self.phase_set
+            
             item['observation.state'] = state
             
         return item
