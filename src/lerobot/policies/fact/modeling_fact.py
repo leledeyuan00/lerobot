@@ -23,12 +23,15 @@ import math
 from collections import deque
 from collections.abc import Callable
 from itertools import chain
+from pathlib import Path
 
 import einops
 import numpy as np
 import torch
 import torch.nn.functional as F  # noqa: N812
 import torchvision
+from huggingface_hub.constants import SAFETENSORS_SINGLE_FILE
+from safetensors.torch import save_file
 from torch import Tensor, nn
 from torchvision.models._utils import IntermediateLayerGetter
 from torchvision.ops.misc import FrozenBatchNorm2d
@@ -66,6 +69,16 @@ class FACTPolicy(PreTrainedPolicy):
             self.temporal_ensembler = FACTTemporalEnsembler(config.temporal_ensemble_coeff, config.chunk_size)
 
         self.reset()
+
+    def _save_pretrained(self, save_directory: Path) -> None:
+        # Override the default safetensors saving: when `config.use_gru` is set, cuDNN's GRU forward
+        # (on CUDA) flattens weight_ih_l0/weight_hh_l0/bias_ih_l0/bias_hh_l0 into views over one shared
+        # buffer. `safetensors.torch.save_model`'s duplicate-storage detection then can't tell which of
+        # those overlapping views to keep and raises. Cloning the state dict breaks the aliasing.
+        self.config._save_pretrained(save_directory)
+        model_to_save = self.module if hasattr(self, "module") else self
+        state_dict = {k: v.clone().contiguous() for k, v in model_to_save.state_dict().items()}
+        save_file(state_dict, str(Path(save_directory) / SAFETENSORS_SINGLE_FILE))
 
     def get_optim_params(self) -> dict:
         # TODO(aliberts, rcadene): As of now, lr_backbone == lr
@@ -307,9 +320,17 @@ class  FACT(nn.Module):
                     self.config.selected_state_shape[0], config.dim_model # modified to match the selected state inputs
                 )
             if self.config.wrench_dim is not None:
-                self.vae_encoder_robot_wrench_input_proj = nn.Linear(
-                    self.config.wrench_dim, config.dim_model
-                )
+                if self.config.use_gru:
+                    self.vae_encoder_robot_wrench_input_proj = nn.GRU(
+                        input_size=self.config.wrench_dim,
+                        hidden_size=config.dim_model,
+                        num_layers=1,
+                        batch_first=True,
+                    )
+                else:
+                    self.vae_encoder_robot_wrench_input_proj = nn.Linear(
+                        self.config.wrench_dim, config.dim_model
+                    )
             if self.config.phase_num is not None:
                 self.vae_encoder_phase_input_proj = nn.Embedding(
                     self.config.phase_num, config.dim_model
@@ -359,9 +380,17 @@ class  FACT(nn.Module):
                 self.config.selected_state_shape[0], config.dim_model # modified to match the selected state inputs
             )
         if self.config.wrench_dim is not None:
-            self.encoder_robot_wrench_input_proj = nn.Linear(
-                self.config.wrench_dim, config.dim_model
-            )
+            if self.config.use_gru:
+                self.encoder_robot_wrench_input_proj = nn.GRU(
+                    input_size=self.config.wrench_dim,
+                    hidden_size=config.dim_model,
+                    num_layers=1,
+                    batch_first=True,
+                )
+            else:
+                self.encoder_robot_wrench_input_proj = nn.Linear(
+                    self.config.wrench_dim, config.dim_model
+                )
         if self.config.phase_num is not None:
             self.encoder_phase_input_proj = nn.Embedding(
                 self.config.phase_num, config.dim_model
@@ -406,6 +435,17 @@ class  FACT(nn.Module):
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
 
+    def _project_wrench(self, proj: nn.Module, batch_wrench: Tensor) -> Tensor:
+        """Project the wrench input to `config.dim_model`, returning a (B, D) tensor.
+
+        `proj` is an `nn.GRU` (batch_wrench: (B, T, wrench_dim), takes the final hidden state) when
+        `config.use_gru` is set, otherwise an `nn.Linear` (batch_wrench: (B, wrench_dim)).
+        """
+        if self.config.use_gru:
+            _, h_n = proj(batch_wrench)
+            return h_n[-1]  # (B, D), final layer's hidden state
+        return proj(batch_wrench)
+
     def forward(self, batch: dict[str, Tensor]) -> tuple[Tensor, tuple[Tensor, Tensor] | tuple[None, None]]:
         """A forward pass through the Action Chunking Transformer (with optional VAE encoder).
 
@@ -440,12 +480,22 @@ class  FACT(nn.Module):
                           20,21,22,23,24,25]    # right wrench
 
         batch_position = batch[OBS_STATE][:, position_indices]  # (B, 6)
-        batch_wrench = batch[OBS_STATE][:, wrench_indices]  # (B, 12)
+        # masking left position
+        if self.config.use_gru:
+            batch_wrench = torch.cat(
+                [batch["observation.state.wrench_history_l"], batch["observation.state.wrench_history_r"]],
+                dim=-1,
+            )  # (B, T, 12), already normalized like observation.state
+        else:
+            batch_wrench = batch[OBS_STATE][:, wrench_indices]  # (B, 12)
         if self.config.phase_num is not None:
             batch_phase = batch["phase"]  # (B, 1)
             batch_phase = batch_phase.flatten().long()
         batch_rot_state = batch["observation_rotation"] # (B, 12)
 
+        if self.config.use_state_mask:
+            batch_position[:, 0:3] = 0.0 # mask left position
+            batch_rot_state[:, 0:6] = 0.0 # mask left rotation
         batch_pose = torch.cat([batch_position, batch_rot_state], dim=-1)  # (B, 18)
 
         # Prepare the latent for input to the transformer encoder.
@@ -458,7 +508,9 @@ class  FACT(nn.Module):
                 robot_state_embed = self.vae_encoder_robot_state_input_proj(batch_pose) # (B, 18)
                 robot_state_embed = robot_state_embed.unsqueeze(1)  # (B, 1, D)
             if self.config.wrench_dim is not None:
-                robot_wrench_embed = self.vae_encoder_robot_wrench_input_proj(batch_wrench)  # (B, D)
+                robot_wrench_embed = self._project_wrench(
+                    self.vae_encoder_robot_wrench_input_proj, batch_wrench
+                )  # (B, D)
                 robot_wrench_embed = robot_wrench_embed.unsqueeze(1)  # (B, 1, D)
             if self.config.phase_num is not None:
                 phase_embed = self.vae_encoder_phase_input_proj(batch_phase)  # (B, D)
@@ -526,7 +578,7 @@ class  FACT(nn.Module):
         if self.config.robot_state_feature:
             encoder_in_tokens.append(self.encoder_robot_state_input_proj(batch_pose))
         if self.config.wrench_dim is not None:
-            encoder_in_tokens.append(self.encoder_robot_wrench_input_proj(batch_wrench))
+            encoder_in_tokens.append(self._project_wrench(self.encoder_robot_wrench_input_proj, batch_wrench))
         if self.config.phase_num is not None:
             encoder_phase_embed = self.encoder_phase_input_proj(batch_phase) # (B, D) as FiLM condition input to encoder
             encoder_in_tokens.append(encoder_phase_embed)

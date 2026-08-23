@@ -130,6 +130,9 @@ class FACTConfig(PreTrainedConfig):
     selected_action_shape: None | list[int] = None
     # Wrench
     wrench_dim: None | int = None
+    use_gru: bool = False
+    # state masking
+    use_state_mask: bool = False
     # Phase
     phase_num: None | int = None
     # main_task

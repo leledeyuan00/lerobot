@@ -26,7 +26,7 @@ ACTION_KEEP_NAMES = [
     "gripper_r",
 ]
 # Load the dataset
-repo_id = "leledeyuan/takeoff-recovery-phase"
+repo_id = "leledeyuan/cable_task2"
 dataset = LeRobotDataset(
     repo_id = repo_id,
 )
@@ -66,7 +66,7 @@ print("episodes:", dataset.num_episodes)
 
 
 # dataset = LeRobotDataset(repo_id="leledeyuan/mixed-tshirt")
-# i = 85329
+i = 15000
 
 # # for i in tqdm(range(len(dataset))):
 # #     try:
@@ -76,7 +76,9 @@ print("episodes:", dataset.num_episodes)
 # #         print("error:", e)
 # #         break
 
-# s = dataset[i]
+s = dataset[i]
+print(s.keys())
+# print("wrench_history:", s["observation.state.wrench_history_l"])
 # print("episode_index:", int(s["episode_index"]))
 # print("frame_index:", int(s["frame_index"]))
 # print("timestamp:", float(s["timestamp"]))
