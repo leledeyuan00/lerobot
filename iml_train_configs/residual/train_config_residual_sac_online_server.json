@@ -1,0 +1,51 @@
+{
+    "policy": {
+        "type": "residual_sac",
+        "device": "cuda",
+        "storage_device": "cpu",
+        "push_to_hub": false,
+        "pretrained_path": "/home/dayuan/nas/models/cable_task2_residual_warmup_s004/pretrained_model",
+
+        "fact_pretrained_path": "/home/dayuan/nas/models/cable_task2_single_wrench/checkpoints/last/pretrained_model",
+        "fact_pool_mode": "structured",
+        "fact_feature_dim": 1536,
+        "fact_feature_layer": -1,
+
+        "residual_arm": "right",
+        "rotation_compose": "world",
+        "residual_pos_scale": 0.004,
+        "residual_grip_scale": 0.01,
+        "max_residual_rot_rad": 0.1,
+        "residual_include_gripper": false,
+
+        "discount": 0.95,
+        "temperature_init": 0.01,
+        "online_steps": 500000,
+        "online_step_before_learning": 200,
+        "online_buffer_capacity": 50000,
+        "offline_buffer_capacity": 50000,
+        "utd_ratio": 1,
+
+        "actor_learner_config": {
+            "learner_host": "0.0.0.0",
+            "learner_port": 50051,
+            "policy_parameters_push_frequency": 4,
+            "queue_get_timeout": 2
+        }
+    },
+
+    "dataset": {
+        "repo_id": "leledeyuan/cable_task2_residual_s004",
+        "root": "/home/dayuan/nas/datasets/cable_task2_residual_prep_s004"
+    },
+    "env": {"type": "gym_manipulator", "fps": 10},
+
+    "batch_size": 256,
+    "output_dir": "/home/dayuan/nas/models/cable_task2_residual_online",
+    "job_name": "cable_task2_residual_online",
+    "seed": 1000,
+    "resume": false,
+    "log_freq": 50,
+    "save_freq": 2000,
+    "wandb": {"enable": true, "project": "lerobot", "disable_artifact": true}
+}

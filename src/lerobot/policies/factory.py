@@ -34,6 +34,7 @@ from lerobot.policies.groot.configuration_groot import GrootConfig
 from lerobot.policies.pi0.configuration_pi0 import PI0Config
 from lerobot.policies.pi05.configuration_pi05 import PI05Config
 from lerobot.policies.pretrained import PreTrainedPolicy
+from lerobot.policies.residual_sac.configuration_residual_sac import ResidualSACConfig
 from lerobot.policies.sac.configuration_sac import SACConfig
 from lerobot.policies.sac.reward_model.configuration_classifier import RewardClassifierConfig
 from lerobot.policies.smolvla.configuration_smolvla import SmolVLAConfig
@@ -97,6 +98,10 @@ def get_policy_class(name: str) -> type[PreTrainedPolicy]:
         from lerobot.policies.sac.modeling_sac import SACPolicy
 
         return SACPolicy
+    elif name == "residual_sac":
+        from lerobot.policies.residual_sac.modeling_residual_sac import ResidualSACPolicy
+
+        return ResidualSACPolicy
     elif name == "reward_classifier":
         from lerobot.policies.sac.reward_model.modeling_classifier import Classifier
 
@@ -154,6 +159,8 @@ def make_policy_config(policy_type: str, **kwargs) -> PreTrainedConfig:
         return PI05Config(**kwargs)
     elif policy_type == "sac":
         return SACConfig(**kwargs)
+    elif policy_type == "residual_sac":
+        return ResidualSACConfig(**kwargs)
     elif policy_type == "smolvla":
         return SmolVLAConfig(**kwargs)
     elif policy_type == "reward_classifier":
@@ -308,6 +315,15 @@ def make_pre_post_processors(
         from lerobot.policies.pi05.processor_pi05 import make_pi05_pre_post_processors
 
         processors = make_pi05_pre_post_processors(
+            config=policy_cfg,
+            dataset_stats=kwargs.get("dataset_stats"),
+        )
+
+    # NOTE: must stay before the SACConfig branch: ResidualSACConfig subclasses SACConfig.
+    elif isinstance(policy_cfg, ResidualSACConfig):
+        from lerobot.policies.residual_sac.processor_residual_sac import make_residual_sac_pre_post_processors
+
+        processors = make_residual_sac_pre_post_processors(
             config=policy_cfg,
             dataset_stats=kwargs.get("dataset_stats"),
         )

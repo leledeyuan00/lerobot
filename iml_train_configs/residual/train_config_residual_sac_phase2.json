@@ -1,0 +1,41 @@
+{
+    "dataset": {
+        "repo_id": "leledeyuan/mating_cable_residual",
+        "root": "/home/dayuan/nas/datasets/mating_cable_residual"
+    },
+    "env": {
+        "type": "gym_manipulator",
+        "fps": 10
+    },
+    "policy": {
+        "type": "residual_sac",
+        "device": "cuda",
+        "storage_device": "cpu",
+        "push_to_hub": false,
+        "pretrained_path": "/home/dayuan/nas/models/mating_cable_residual/warmup_critic/pretrained_model",
+
+        "fact_pretrained_path": "/home/dayuan/nas/models/mating_cable_mphase/checkpoints/last/pretrained_model",
+        "fact_feature_dim": 512,
+        "fact_feature_layer": -1,
+
+        "residual_arm": "right",
+        "rotation_compose": "world",
+        "residual_pos_scale": 0.01,
+        "residual_grip_scale": 0.01,
+        "max_residual_rot_rad": 0.1,
+        "residual_include_gripper": false,
+
+        "discount": 0.95,
+        "temperature_init": 0.01,
+        "online_steps": 100000,
+        "online_step_before_learning": 200,
+        "utd_ratio": 1
+    },
+    "batch_size": 256,
+    "output_dir": "/home/dayuan/nas/models/mating_cable_residual/online",
+    "job_name": "residual_sac_phase2",
+    "seed": 1000,
+    "log_freq": 100,
+    "save_freq": 2000,
+    "wandb": {"enable": false}
+}

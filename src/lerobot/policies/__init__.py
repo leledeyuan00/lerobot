@@ -24,6 +24,7 @@ from .vqbet.configuration_vqbet import VQBeTConfig as VQBeTConfig
 from .fact.configuration_fact import FACTConfig as FACTConfig
 from .fdp.configuration_fdp import FdpConfig as FdpConfig
 from .factphase.configuration_factphase import FACTPhaseConfig as FACTPhaseConfig
+from .residual_sac.configuration_residual_sac import ResidualSACConfig as ResidualSACConfig
 
 __all__ = [
     "ACTConfig",
@@ -37,4 +38,5 @@ __all__ = [
     "FACTConfig",
     "FdpConfig",
     "FACTPhaseConfig",
+    "ResidualSACConfig",
 ]
